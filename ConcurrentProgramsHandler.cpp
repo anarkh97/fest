@@ -38,14 +38,6 @@ ConcurrentProgramsHandler::ConcurrentProgramsHandler(IoData &iod_, MPI_Comm glob
     MPI_Comm_size(aeros_comm, &aeros_size);
     assert(aeros_size>0);
   }
-  if(iod.concurrent.aerof.type != AerofCouplingData::NONE) {
-    fprintf(stdout, "\033[0;31m*** Error: FEST cannot be coupled with AERO-F.\033[0m\n");
-    exit(EXIT_FAILURE); 
-  }
-  if(iod.concurrent.m2c_twin.type != M2CTwinningData::NONE) {
-    fprintf(stdout, "\033[0;31m*** Error: FEST cannot be coupled with M2C (twin).\033[0m\n");
-    exit(EXIT_FAILURE); 
-  }
 
   // time-step size suggested by other solvers, will be updated
   dt = -1.0;

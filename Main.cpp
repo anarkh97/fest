@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 
   //! Read user's input file (read the parameters)
   IoData iod(argc, argv);
-  verbose = iod.output.verbose;
+  verbose = iod.special_tools.verbose;
 
   //! Partition MPI, if there are concurrent programs
   MPI_Comm comm; //this is going to be the M2C communicator
