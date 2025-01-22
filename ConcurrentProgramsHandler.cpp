@@ -10,7 +10,7 @@
 
 ConcurrentProgramsHandler::ConcurrentProgramsHandler(IoData &iod_, MPI_Comm global_comm_, MPI_Comm &comm_)
                          : iod(iod_), global_comm(global_comm_), 
-                           fest_comm(global_comm_), aeros_comm(), aeros(NULL),
+                           fest_comm(global_comm_), aeros_comm(), aeros(NULL)
 {
   coupled = false; //default
 
@@ -22,7 +22,7 @@ ConcurrentProgramsHandler::ConcurrentProgramsHandler(IoData &iod_, MPI_Comm glob
     // Within the family... Common codes allow multiple (more than 2) solvers coupled together
     coupled = true;
     //The following parameters are the same as "FLUID_ID" and "MAX_CODES" in AERO-S and AERO-F
-    m2c_color = 0; // my color
+    fest_color = 0; // my color
     maxcolor = 4; 
     aeros_color = 1; //"STRUCT_ID" in AERO-S
   }

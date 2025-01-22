@@ -13,7 +13,7 @@ int main(int argc, char* argv[])
   start_time = walltime(); //for timing purpose only (calls MPI_Wtime)
 
   //! Print header (global proc #0, assumed to be a M2C proc)
-  fest_comm = MPI_COMM_WORLD;
+  //fest_comm = MPI_COMM_WORLD;
   printHeader(argc, argv);
 
   //! Read user's input file (read the parameters)
