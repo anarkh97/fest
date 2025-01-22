@@ -104,7 +104,8 @@ struct LagrangianMeshOutputData {
 
   const char* orig_config; //!< original mesh
   const char* disp; //!< displacement
-  const char* sol; //!< solution
+  const char* force; //!< force
+  const char* force_over_area; //!< force over area
 
   const char *wetting_output_filename; //!< optional output file that shows the detected wetted side(s)
 

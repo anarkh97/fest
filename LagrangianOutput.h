@@ -30,8 +30,8 @@ class LagrangianOutput {
   double last_snapshot_time; //!< latest time when solution snapshot is written to file
 
   FILE* disp_file;
-  FILE* sol_file;
-  FILE* sol2_file;
+  FILE* force_file;
+  FILE* fovera_file;
 
 public:
 

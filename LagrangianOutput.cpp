@@ -16,8 +16,8 @@ using std::endl;
 //------------------------------------------------------------------------------
 
 LagrangianOutput::LagrangianOutput(MPI_Comm &comm_, LagrangianMeshOutputData &iod_lag_)
-                : iod_lag(iod_lag_), comm(comm_), disp_file(NULL), sol_file(NULL),
-                  sol2_file(NULL)
+                : iod_lag(iod_lag_), comm(comm_), disp_file(NULL), force_file(NULL),
+                  fovera_file(NULL)
 {
   iFrame = 0;
   last_snapshot_time = -1.0;
@@ -100,10 +100,12 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
   
   //Only Proc #0 writes
   
-  if(!(strcmp(iod_lag.disp,"") || strcmp(iod_lag.sol,""))) {
+/* AN: Error not really needed.
+  if(!(strcmp(iod_lag.disp,"") || strcmp(iod_lag.force,""))) {
     fprintf(stdout,"\033[0;31m*** Error: Missing output file names.\n\033[0m");
     exit(-1);
   }
+*/
 
   if(strcmp(iod_lag.disp,"")) {
 
@@ -137,62 +139,55 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
   } 
 
 
-  if(strcmp(iod_lag.sol,"")) {
+  if(strcmp(iod_lag.force,"")) {
 
     char outname[512];
-    sprintf(outname, "%s%s", iod_lag.prefix, iod_lag.sol);
+    sprintf(outname, "%s%s", iod_lag.prefix, iod_lag.force);
 
-    if(sol_file == NULL) { //create new file and write header
-      sol_file = fopen(outname, "w");
-      if(sol_file == NULL) {//unable to open file
+    if(force_file == NULL) { //create new file and write header
+      force_file = fopen(outname, "w");
+      if(force_file == NULL) {//unable to open file
         fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
         exit(-1);
       }
-      fprintf(sol_file, "Vector SOLUTION under NLDynamic for MyNodes\n");
-      fprintf(sol_file, "%d\n", (int)F.size());
-      fclose(sol_file);
+      fprintf(force_file, "Vector SOLUTION under NLDynamic for MyNodes\n");
+      fprintf(force_file, "%d\n", (int)F.size());
+      fclose(force_file);
     }
 
-    sol_file = fopen(outname,"a");
-    if(sol_file == NULL) {//unable to open file
+    force_file = fopen(outname,"a");
+    if(force_file == NULL) {//unable to open file
       fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
       exit(-1);
     }
-    AppendResultToFile(sol_file, t, F.size(), 3, (double*)F.data());
-
-
-    // write second solution vector is provided
-    if(F2_ptr) {
-      // insert "_2" to file name
-      string f2_name = iod_lag.sol;
-      int loc;
-      for(loc=0; loc<(int)f2_name.size(); loc++)
-        if(f2_name[loc] == '.')
-          break; 
-      f2_name.insert(loc,"_2");
-      f2_name = string(iod_lag.prefix) + f2_name;
-
-      if(sol2_file == NULL) { //create new file and write header
-        sol2_file = fopen(f2_name.c_str(), "w");
-        if(sol2_file == NULL) {//unable to open file
-          fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", f2_name.c_str());
-          exit(-1);
-        }
-        fprintf(sol2_file, "Vector SOLUTION2 under NLDynamic for MyNodes\n");
-        fprintf(sol2_file, "%d\n", (int)F2_ptr->size());
-        fclose(sol2_file);
-      }
-
-      sol2_file = fopen(f2_name.c_str(),"a");
-      if(sol2_file == NULL) {//unable to open file
-        fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", f2_name.c_str());
-        exit(-1);
-      }
-      AppendResultToFile(sol2_file, t, F2_ptr->size(), 3, (double*)F2_ptr->data());
-    }
+    AppendResultToFile(force_file, t, F.size(), 3, (double*)F.data());
 
   } 
 
+  if(strcmp(iod_lag.force_over_area,"")) {
+    assert(F2_ptr); // should not be NULL
+
+    char outname[512];
+    sprintf(outname, "%s%s", iod_lag.prefix, iod_lag.force);
+
+    if(fovera_file == NULL) { //create new file and write header
+      fovera_file = fopen(outname, "w");
+      if(fovera_file == NULL) {//unable to open file
+        fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
+        exit(-1);
+      }
+      fprintf(fovera_file, "Vector SOLUTION under NLDynamic for MyNodes\n");
+      fprintf(fovera_file, "%d\n", (int)F2_ptr->size());
+      fclose(fovera_file);
+    }
+
+    fovera_file = fopen(outname,"a");
+    if(fovera_file == NULL) {//unable to open file
+      fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
+      exit(-1);
+    }
+    AppendResultToFile(fovera_file, t, F2_ptr->size(), 3, (double*)F2_ptr->data());
+  }
 
 END_OF_OUTPUT:
 

@@ -3,6 +3,11 @@
   
 #include<IoData.h>
 #include<ConcurrentProgramsHandler.h>
+#include<TriangulatedSurface.h>
+#include<LagrangianOutput.h>
+#include<Vector3D.h>
+#include<vector>
+#include<memory>
 
 //! Interpolation load driver
 class InterpolationLoadDriver {
@@ -10,6 +15,7 @@ class InterpolationLoadDriver {
   MPI_Comm& comm;
   IoData& iod;
   ConcurrentProgramsHandler& concurrent;
+  LagrangianOutput lagout;
 
 public:
 
@@ -19,6 +25,11 @@ public:
   ~InterpolationLoadDriver();
 
   void Run();
+
+protected:
+
+  void ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force, 
+                     std::vector<Vec3D> *force_over_area, double t);
 
 };
 

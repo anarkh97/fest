@@ -151,7 +151,8 @@ LagrangianMeshOutputData::LagrangianMeshOutputData()
 
   orig_config = "";
   disp = "";
-  sol  = "";
+  force  = "";
+  force_over_area = "";
 
   wetting_output_filename = "";
 }
@@ -160,7 +161,7 @@ LagrangianMeshOutputData::LagrangianMeshOutputData()
 
 void LagrangianMeshOutputData::setup(const char *name, ClassAssigner *father)
 {
-  ClassAssigner *ca = new ClassAssigner(name, 7, father);
+  ClassAssigner *ca = new ClassAssigner(name, 8, father);
   
   new ClassInt<LagrangianMeshOutputData>(ca, "Frequency", this, &LagrangianMeshOutputData::frequency);
   new ClassDouble<LagrangianMeshOutputData>(ca, "TimeInterval", this, &LagrangianMeshOutputData::frequency_dt);
@@ -169,7 +170,8 @@ void LagrangianMeshOutputData::setup(const char *name, ClassAssigner *father)
   new ClassStr<LagrangianMeshOutputData>(ca, "Mesh", this, &LagrangianMeshOutputData::orig_config);
 
   new ClassStr<LagrangianMeshOutputData>(ca, "Displacement", this, &LagrangianMeshOutputData::disp);
-  new ClassStr<LagrangianMeshOutputData>(ca, "Solution", this, &LagrangianMeshOutputData::sol);
+  new ClassStr<LagrangianMeshOutputData>(ca, "Force", this, &LagrangianMeshOutputData::force);
+  new ClassStr<LagrangianMeshOutputData>(ca, "ForceOverArea", this, &LagrangianMeshOutputData::force_over_area);
 
   new ClassStr<LagrangianMeshOutputData>(ca, "ContactSurfaceOutput", this,
                                          &LagrangianMeshOutputData::wetting_output_filename);
