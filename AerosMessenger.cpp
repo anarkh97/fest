@@ -34,24 +34,24 @@ extern int verbose;
 //---------------------------------------------------------------
 // TODO(KW): When I or someone has time, should re-visit the different coupling algorithms (C0, A6, etc.).
 //
-AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &m2c_comm_, MPI_Comm &joint_comm_, 
+AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &fest_comm_, MPI_Comm &joint_comm_, 
                                TriangulatedSurface &surf_, vector<Vec3D> &F_)
-              : iod_aeros(iod_aeros_), m2c_comm(m2c_comm_), joint_comm(joint_comm_),
+              : iod_aeros(iod_aeros_), fest_comm(fest_comm_), joint_comm(joint_comm_),
                 surface(surf_), F(F_), cracking(NULL), numStrNodes(NULL)
 {
 
-  MPI_Comm_rank(m2c_comm, &m2c_rank);
-  MPI_Comm_size(m2c_comm, &m2c_size);
+  MPI_Comm_rank(fest_comm, &fest_rank);
+  MPI_Comm_size(fest_comm, &fest_size);
 
   // verification of MPI / communicators
   int joint_rank, joint_size;
   MPI_Comm_rank(joint_comm, &joint_rank);
   MPI_Comm_size(joint_comm, &joint_size);
-  assert(m2c_rank == joint_rank);
-  assert(m2c_size == joint_size);
+  assert(fest_rank == joint_rank);
+  assert(fest_size == joint_size);
 
   MPI_Comm_remote_size(joint_comm, &numAerosProcs);
-  //fprintf(stdout,"I am [%d]. Aero-S running on %d procs.\n", m2c_rank, numAerosProcs);
+  //fprintf(stdout,"I am [%d]. Aero-S running on %d procs.\n", fest_rank, numAerosProcs);
 
   //----------------------
   // copied from AERO-F/DynamicNodalTransfer.cpp (written by KW in grad school...)
@@ -140,7 +140,7 @@ AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &m2c_comm
 
 //debug
 /*
-  if(m2c_rank==0) {
+  if(fest_rank==0) {
     vector<Vec3D> &x(surface.X);
     for(int i=0; i<x.size(); i++)
       fprintf(stdout,"%d %e %e %e.\n", i, x[i][0], x[i][1], x[i][2]);
@@ -148,7 +148,7 @@ AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &m2c_comm
     for(int i=0; i<e.size(); i++)
       fprintf(stdout,"%d %d %d %d.\n", i, e[i][0], e[i][1], e[i][2]);
   }
-  MPI_Barrier(m2c_comm);
+  MPI_Barrier(fest_comm);
   exit_mpi();
 */
 } 
@@ -176,10 +176,10 @@ void
 AerosMessenger::GetEmbeddedWetSurfaceInfo(int &eType, bool &crack, int &nStNodes, int &nStElems)
 {
   int info[4];
-  if(m2c_rank==0)
+  if(fest_rank==0)
     MPI_Recv(info, 4, MPI_INT, MPI_ANY_SOURCE, WET_SURF_TAG1, joint_comm, MPI_STATUS_IGNORE);
 
-  MPI_Bcast(info, 4, MPI_INT, 0, m2c_comm);
+  MPI_Bcast(info, 4, MPI_INT, 0, fest_comm);
 
   eType    = info[0];
   crack    = info[1] ? true : false;
@@ -195,21 +195,21 @@ AerosMessenger::GetEmbeddedWetSurfaceInfo(int &eType, bool &crack, int &nStNodes
 void
 AerosMessenger::GetEmbeddedWetSurface(int nNodes, Vec3D *nodes, int nElems, int *elems, int eType)
 {
-  if(m2c_rank==0)
+  if(fest_rank==0)
     MPI_Recv((double*)nodes, nNodes*3, MPI_DOUBLE, MPI_ANY_SOURCE, WET_SURF_TAG2, joint_comm, MPI_STATUS_IGNORE);
 
-  MPI_Bcast((double*)nodes, nNodes*3, MPI_DOUBLE, 0, m2c_comm);
+  MPI_Bcast((double*)nodes, nNodes*3, MPI_DOUBLE, 0, fest_comm);
 
-  if(m2c_rank==0)
+  if(fest_rank==0)
     MPI_Recv(elems, nElems*eType, MPI_INT, MPI_ANY_SOURCE, WET_SURF_TAG3, joint_comm, MPI_STATUS_IGNORE);
 
-  MPI_Bcast(elems, nElems*eType, MPI_INT, 0, m2c_comm);
+  MPI_Bcast(elems, nElems*eType, MPI_INT, 0, fest_comm);
 
   if(verbose>=1)
     print("- Received nodes and elements of embedded surface from Aero-S.\n");
 
 /*
-  if(m2c_rank==0) {
+  if(fest_rank==0) {
     for(int i=0; i<nNodes; i++) {
       fprintf(stdout,"%d  %e %e %e\n", i, nodes[i][0], nodes[i][1], nodes[i][2]);
     }
@@ -223,10 +223,10 @@ void
 AerosMessenger::GetInitialCrackingSetup(int &totalStNodes, int &totalStElems)
 {
   int info[2];
-  if(m2c_rank==0)
+  if(fest_rank==0)
     MPI_Recv(info, 2, MPI_INT, MPI_ANY_SOURCE, WET_SURF_TAG4, joint_comm, MPI_STATUS_IGNORE);
 
-  MPI_Bcast(info, 2, MPI_INT, 0, m2c_comm);
+  MPI_Bcast(info, 2, MPI_INT, 0, fest_comm);
   
   totalStNodes = info[0];
   totalStElems = info[1];
@@ -275,7 +275,7 @@ void
 AerosMessenger::Negotiate()
 {
 
-  int numCPUMatchedNodes = m2c_rank ? 0 : totalNodes;
+  int numCPUMatchedNodes = fest_rank ? 0 : totalNodes;
 
   vector<int> ibuffer;
   if(numCPUMatchedNodes>0) {
@@ -323,14 +323,14 @@ AerosMessenger::Negotiate()
 
     if((int)pack2local.size() != numCPUMatchedNodes) {
       fprintf(stdout, "\033[0;31m*** Error (proc %d): wrong number of matched nodes (%d instead of %d).\n\033[0m",
-              m2c_rank, (int)pack2local.size(), numCPUMatchedNodes);
+              fest_rank, (int)pack2local.size(), numCPUMatchedNodes);
       exit(-1);
     }
 
     for(auto it = local2pack.begin(); it != local2pack.end(); it++) {
       if(*it < 0) {
         fprintf(stdout, "\033[0;31m*** Error (proc %d): found unmatched node (local id: %d).\n\033[0m",
-              m2c_rank, (int)(it - local2pack.begin()));
+              fest_rank, (int)(it - local2pack.begin()));
         exit(-1);
       }
     }
@@ -350,10 +350,10 @@ AerosMessenger::GetInfo()
 {
 
   double info[5];
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
     MPI_Recv(info, 5, MPI_DOUBLE, MPI_ANY_SOURCE, INFO_TAG, joint_comm, MPI_STATUS_IGNORE);
   }
-  MPI_Bcast(info, 5, MPI_DOUBLE, 0, m2c_comm);
+  MPI_Bcast(info, 5, MPI_DOUBLE, 0, fest_comm);
 
   algNum = int(info[0]);
   dt     = info[1];
@@ -411,10 +411,10 @@ AerosMessenger::GetNewCrackingStats(int& numConnUpdate, int& numLSUpdate, int& n
   int size = 4;
   int nNew[size];
 
-  if(m2c_rank == 0)
+  if(fest_rank == 0)
     MPI_Recv(nNew, size, MPI_INT, MPI_ANY_SOURCE, CRACK_TAG1, joint_comm, MPI_STATUS_IGNORE);
 
-  MPI_Bcast(nNew, 4, MPI_INT, 0, m2c_comm);
+  MPI_Bcast(nNew, 4, MPI_INT, 0, fest_comm);
 
   numConnUpdate = nNew[1];
   numLSUpdate = nNew[2];
@@ -432,12 +432,12 @@ AerosMessenger::GetInitialPhantomNodes(int newNodes, vector<Vec3D>& xyz, int nNo
 
   double coords[size];
 
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
     // assume the correct ordering: nNodes, nNodes+1, ..., nNodes+newNodes-1
     MPI_Recv(coords, size, MPI_DOUBLE, MPI_ANY_SOURCE, CRACK_TAG4, joint_comm, MPI_STATUS_IGNORE);
   }
 
-  MPI_Bcast(coords, size, MPI_DOUBLE, 0, m2c_comm);
+  MPI_Bcast(coords, size, MPI_DOUBLE, 0, fest_comm);
 
   for(int i = 0; i < newNodes; i++)
     for(int j = 0; j < 3; j++) {
@@ -483,7 +483,7 @@ AerosMessenger::GetNewCracking(int numConnUpdate, int numLSUpdate, int newNodes)
   if(newNodes!=0)
     assert(numAerosProcs==1); //I think this is a current limitation
 
-  if(m2c_rank == 0 && newNodes) 
+  if(fest_rank == 0 && newNodes) 
     numStrNodes[0][0] = nNodes; //Assuming only talking to one structure proc?
 
 
@@ -518,10 +518,10 @@ AerosMessenger::GetNewCrackingCore(int numConnUpdate, int numLSUpdate, int *phan
   int integer_pack[integer_pack_size]; // KW: This should be a short array since there will not be many new cracked elements in
                                        //     one time-step. Therefore it should be OK to create and destroy it repeatedly.
 
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
     MPI_Recv(integer_pack, integer_pack_size, MPI_INT, MPI_ANY_SOURCE, CRACK_TAG2, joint_comm, MPI_STATUS_IGNORE);
   }
-  MPI_Bcast(integer_pack, integer_pack_size, MPI_INT, 0, m2c_comm);
+  MPI_Bcast(integer_pack, integer_pack_size, MPI_INT, 0, fest_comm);
 
   for(int i = 0; i < 5 * numConnUpdate; i++) {
     phantoms[i] = integer_pack[i];
@@ -535,10 +535,10 @@ AerosMessenger::GetNewCrackingCore(int numConnUpdate, int numLSUpdate, int *phan
     new2old[2 * i + 1] = integer_pack[5 * numConnUpdate + numLSUpdate + 2 * i + 1];
   }
 
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
     MPI_Recv(phi, 4*numLSUpdate, MPI_DOUBLE, MPI_ANY_SOURCE, CRACK_TAG3, joint_comm, MPI_STATUS_IGNORE);
   }
-  MPI_Bcast(phi, 4*numLSUpdate, MPI_DOUBLE, 0, m2c_comm);
+  MPI_Bcast(phi, 4*numLSUpdate, MPI_DOUBLE, 0, fest_comm);
 
 }
 
@@ -548,10 +548,10 @@ int
 AerosMessenger::GetStructSubcyclingInfo()
 {
   double info;
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
     MPI_Recv(&info, 1, MPI_DOUBLE, MPI_ANY_SOURCE, SUBCYCLING_TAG, joint_comm, MPI_STATUS_IGNORE);
   }
-  MPI_Bcast(&info, 1, MPI_DOUBLE, 0, m2c_comm);
+  MPI_Bcast(&info, 1, MPI_DOUBLE, 0, fest_comm);
 
   return (int)info;
 }
@@ -562,7 +562,7 @@ void
 AerosMessenger::SendForce()
 {
   //IMPORTANT: Assuming that the force has been assembled on Proc 0
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
 
     //TODO: Need to take care of "staggering"
     //
@@ -598,7 +598,7 @@ AerosMessenger::SendForce()
 void
 AerosMessenger::GetDisplacementAndVelocity()
 {
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
 
     assert(bufsize==6);
 
@@ -630,8 +630,8 @@ AerosMessenger::GetDisplacementAndVelocity()
 
   
   //broadcast surface and Udot
-  MPI_Bcast((double*)surface.X.data(), 3*nNodes, MPI_DOUBLE, 0, m2c_comm);
-  MPI_Bcast((double*)surface.Udot.data(), 3*nNodes, MPI_DOUBLE, 0, m2c_comm);
+  MPI_Bcast((double*)surface.X.data(), 3*nNodes, MPI_DOUBLE, 0, fest_comm);
+  MPI_Bcast((double*)surface.Udot.data(), 3*nNodes, MPI_DOUBLE, 0, fest_comm);
 
 }
 
@@ -640,7 +640,7 @@ AerosMessenger::GetDisplacementAndVelocity()
 void
 AerosMessenger::SendM2CSuggestedTimeStep(double dtf0)
 {
-  if(m2c_rank == 0) {
+  if(fest_rank == 0) {
 
     vector<MPI_Request> send_requests;
 

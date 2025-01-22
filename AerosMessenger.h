@@ -10,6 +10,7 @@
 #include<IoData.h>
 #include<Vector3D.h>
 #include<TriangulatedSurface.h>
+#include<CrackingSurface.h>
 
 /*************************************************************
 * Class AerosMessenger is responsible for communicating with

@@ -30,32 +30,27 @@ class ConcurrentProgramsHandler {
 
   bool coupled; //!< whether M2C is coupled to (i.e. running concurrently w/) any other programs
 
-  int m2c_color; //!< the id ("color") of M2C in the MPI split
+  int fest_color; //!< the id ("color") of FEST in the MPI split
   int maxcolor; //!< the total number of "colors" (must be the same in all concurrent programs)
 
   MPI_Comm global_comm; //!< the global communicator
   int global_size, global_rank;
 
-  MPI_Comm m2c_comm; //!< the communicator for M2C
-  int m2c_size, m2c_rank;
+  MPI_Comm fest_comm; //!< the communicator for FEST
+  int fest_size, fest_rank;
 
-  //! the communicators between m2c and each of the other programs
-  std::vector<MPI_Comm> c;
- 
   //! time-step size suggested by other solvers
   double dt;
   double tmax;
 
+  //! the communicators between m2c and each of the other programs
+  std::vector<MPI_Comm> c;
+ 
   //! other concurrent/coupled programs
   AerosMessenger *aeros; //!< takes care of communications w/ AERO-S
   MPI_Comm aeros_comm;  //!< this is just c[aeros_color], a communicator that includes
-                        //!< M2C and AERO-S processes
+                        //!< FEST and AERO-S processes
 
-public:
-  enum TwinningStatus {NONE = 0, LEADER = 1, FOLLOWER = 2};
-private:
-  TwinningStatus twinning_status;
-  
 public:
 
   //! The constructor calls MPI_Comm_split together with all the concurrent programs
@@ -66,26 +61,25 @@ public:
   void Destroy();
 
   inline bool Coupled() {return coupled;}
-  inline enum TwinningStatus GetTwinningStatus() {return twinning_status;}
   inline double GetTimeStepSize() {return dt;}
   inline double GetMaxTime() {return tmax;}
 
   //! The main functions that handle communications
-  void CommunicateBeforeTimeStepping(SpaceVariable3D *coordinates_ = NULL, DataManagers3D *dms_ = NULL,
+  void CommunicateBeforeTimeStepping(/*SpaceVariable3D *coordinates_ = NULL, DataManagers3D *dms_ = NULL,
                                      std::vector<GhostPoint> *ghost_nodes_inner_ = NULL,
                                      std::vector<GhostPoint> *ghost_nodes_outer_ = NULL,
                                      GlobalMeshInfo *global_mesh_ = NULL,
                                      SpaceVariable3D *V = NULL, SpaceVariable3D *ID = NULL,
-                                     std::set<Int3> *spo_frozen_nodes = NULL); 
+                                     std::set<Int3> *spo_frozen_nodes = NULL*/); 
 
 
-  void FirstExchange(SpaceVariable3D *V = NULL, double dt0 = -1.0,
-                     double tmax0 = -1.0); //!< called at the the 1st time step
+  void FirstExchange(/*SpaceVariable3D *V = NULL, double dt0 = -1.0,
+                     double tmax0 = -1.0*/); //!< called at the the 1st time step
 
-  void Exchange(SpaceVariable3D *V = NULL, double dt0 = -1.0,
-                double tmax0 = -1.0); //!< called every time step (except 1st and last)
+  void Exchange(/*SpaceVariable3D *V = NULL, double dt0 = -1.0,
+                double tmax0 = -1.0*/); //!< called every time step (except 1st and last)
 
-  void FinalExchange(SpaceVariable3D *V = NULL); //!< at the last time step
+  void FinalExchange(/*SpaceVariable3D *V = NULL*/); //!< at the last time step
 
 private:
 
