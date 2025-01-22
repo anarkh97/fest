@@ -10,7 +10,6 @@
 #include<IoData.h>
 #include<Vector3D.h>
 #include<TriangulatedSurface.h>
-#include<CrackingSurface.h>
 
 /*************************************************************
 * Class AerosMessenger is responsible for communicating with
@@ -25,10 +24,10 @@ class AerosMessenger {
 
   AerosCouplingData &iod_aeros;
 
-  MPI_Comm &m2c_comm; //!< This is the M2C communicator
-  MPI_Comm &joint_comm; //!< This is the joint communicator of M2C and AERO-S
+  MPI_Comm &fest_comm; //!< This is the FEST communicator
+  MPI_Comm &joint_comm; //!< This is the joint communicator of FEST and AERO-S
 
-  int m2c_rank, m2c_size;
+  int fest_rank, fest_size;
 
   int numAerosProcs;
   int (*numStrNodes)[2];  //!< numStrNodes[AEROS-proc-num][0]: the num of nodes; [1]: index of first node
@@ -50,20 +49,17 @@ class AerosMessenger {
 
 public:
 
-  AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &m2c_comm_, MPI_Comm &joint_comm_, 
+  AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &fest_comm_, MPI_Comm &joint_comm_, 
                  TriangulatedSurface &surf_, std::vector<Vec3D> &F_);
   ~AerosMessenger();
   void Destroy();
 
   double GetTimeStepSize() {return dt;}
   double GetMaxTime() {return tmax;}
-  bool   Cracking()   {return cracking==NULL ? false : true;}
-
-  CrackingSurface *GetPointerToCrackingSurface() {return cracking;} 
 
   //! Functions for structure/AERO-S subcycling (not supported at present)
   int StructSubcycling() {return structureSubcycling;}
-  void SendM2CSuggestedTimeStep(double dtf0);
+  void SendFESTSuggestedTimeStep(double dtf0);
 
   //! Exchange data w/ AERO-S (called before the first time step)
   void CommunicateBeforeTimeStepping();
@@ -82,17 +78,10 @@ protected:
   //! functions called by the constructor
   void GetEmbeddedWetSurfaceInfo(int &eType, bool &crack, int &nStNodes, int &nStElems);
   void GetEmbeddedWetSurface(int nNodes, Vec3D *nodes, int nElems, int *elems, int eType);
-  void GetInitialCrackingSetup(int &totalStNodes, int &totalStElems);
   int  SplitQuads(int *quads, int nStElems, std::vector<Int3> &Tria);
   void Negotiate();
   void GetInfo();
-  void GetInitialCrack();
-  bool GetNewCrackingStats(int& numConnUpdate, int& numLSUpdate, int& newNodes);
   void GetInitialPhantomNodes(int newNodes, std::vector<Vec3D>& xyz, int nNodes);
-  void GetNewCracking(int numConnUpdate, int numLSUpdate, int newNodes);
-  int  GetNewCracking();
-  void GetNewCrackingCore(int numConnUpdate, int numLSUpdate, int *phantoms, double *phi, int *phiIndex,
-                          int *new2old, int newNodes);
   int  GetStructSubcyclingInfo();
 
   //! functions call by data-exchange functions

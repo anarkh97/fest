@@ -21,12 +21,6 @@
 #define DISP_TAG 2000
 #define INFO_TAG 3000
 
-#define CRACK_TAG1 22
-#define CRACK_TAG2 33
-#define CRACK_TAG3 44
-#define CRACK_TAG4 55
-
-
 using std::vector;
 
 extern int verbose;
@@ -37,7 +31,7 @@ extern int verbose;
 AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &fest_comm_, MPI_Comm &joint_comm_, 
                                TriangulatedSurface &surf_, vector<Vec3D> &F_)
               : iod_aeros(iod_aeros_), fest_comm(fest_comm_), joint_comm(joint_comm_),
-                surface(surf_), F(F_), cracking(NULL), numStrNodes(NULL)
+                surface(surf_), F(F_), numStrNodes(NULL)
 {
 
   MPI_Comm_rank(fest_comm, &fest_rank);
@@ -63,15 +57,8 @@ AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &fest_com
 
   GetEmbeddedWetSurfaceInfo(elemType, crack, nStNodes, nStElems);
 
-  // initialize cracking information
-  if(crack) {
-    GetInitialCrackingSetup(totalStNodes, totalStElems);
-    cracking = new CrackingSurface(elemType, nStElems, totalStElems, nStNodes, totalStNodes);
-  }
-  else {
-    totalStNodes = nStNodes;
-    totalStElems = nStElems;
-  }
+  totalStNodes = nStNodes;
+  totalStElems = nStElems;
 
   // allocate memory for the node list
   totalNodes = totalStNodes;
@@ -93,15 +80,8 @@ AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &fest_com
       break;
     case 4: // quadrangles include triangles represented as degenerated quadrangles.
       GetEmbeddedWetSurface(nNodes, surface.X0.data(), nStElems, (int*)tmpTopo, elemType);
-      if(cracking) {
-        totalElems = totalStElems * 2;
-        surface.elems.resize(totalElems, Int3(0));
-        nElems = cracking->splitQuads((int*)tmpTopo, nStElems, (int*)surface.elems.data());
-      }
-      else {
-        nElems = SplitQuads((int *)tmpTopo, nStElems, surface.elems); 
-        totalElems = nElems;
-      }
+      nElems = SplitQuads((int *)tmpTopo, nStElems, surface.elems); 
+      totalElems = nElems;
       break;
     default:
       print_error("*** Error: Element type (%d) of the wet surface not recognized! Must be 3 or 4.\n", elemType);
@@ -122,13 +102,8 @@ AerosMessenger::AerosMessenger(AerosCouplingData &iod_aeros_, MPI_Comm &fest_com
 
   GetInfo(); // Get algorithm number, dt, and tmax
 
-  if(cracking) {
-    GetInitialCrack();
-    cracking->setNewCrackingFlag(false);
-  }
-
   structureSubcycling = (algNum == 22) ? GetStructSubcyclingInfo() : 0; 
-  //currently, M2C does not support "structure subcycling".
+  //currently, M2C/FEST does not support "structure subcycling".
 
   if(algNum == 6)
     print("- Coupled with Aero-S (running on %d processors) using the A6 algorithm "
@@ -159,9 +134,6 @@ AerosMessenger::~AerosMessenger()
 {
   if(numStrNodes)
     delete [] numStrNodes;
-
-  if(cracking)
-    delete cracking;
 }
 
 //---------------------------------------------------------------
@@ -182,7 +154,7 @@ AerosMessenger::GetEmbeddedWetSurfaceInfo(int &eType, bool &crack, int &nStNodes
   MPI_Bcast(info, 4, MPI_INT, 0, fest_comm);
 
   eType    = info[0];
-  crack    = info[1] ? true : false;
+  crack    = false; //! AN: cracking disabled as it would result in errors in interpolations.
   nStNodes = info[2]; 
   nStElems = info[3];
 
@@ -215,23 +187,6 @@ AerosMessenger::GetEmbeddedWetSurface(int nNodes, Vec3D *nodes, int nElems, int 
     }
   }
 */
-}
-
-//---------------------------------------------------------------
-
-void
-AerosMessenger::GetInitialCrackingSetup(int &totalStNodes, int &totalStElems)
-{
-  int info[2];
-  if(fest_rank==0)
-    MPI_Recv(info, 2, MPI_INT, MPI_ANY_SOURCE, WET_SURF_TAG4, joint_comm, MPI_STATUS_IGNORE);
-
-  MPI_Bcast(info, 2, MPI_INT, 0, fest_comm);
-  
-  totalStNodes = info[0];
-  totalStElems = info[1];
-
-  print("- Received fracture info from Aero-S: total nodes/elements = %d/%d.\n", totalStNodes, totalStElems);
 }
 
 //---------------------------------------------------------------
@@ -386,164 +341,6 @@ AerosMessenger::GetInfo()
 
 //---------------------------------------------------------------
 
-void
-AerosMessenger::GetInitialCrack()
-{
-  int numConnUpdate, numLSUpdate, newNodes;
-  bool need2update = GetNewCrackingStats(numConnUpdate, numLSUpdate, newNodes); // inputs will be modified
-  if(!need2update) {
-    return;
-  }
-
-  // get initial phantom nodes.
-  GetInitialPhantomNodes(newNodes, surface.X, nNodes);
-
-  // NOTE: nNodes will be updated in "getNewCracking"
-  // get initial phantom elements (topo change)
-  GetNewCracking(numConnUpdate, numLSUpdate, newNodes);
-}
-
-//---------------------------------------------------------------
-
-bool
-AerosMessenger::GetNewCrackingStats(int& numConnUpdate, int& numLSUpdate, int& newNodes)
-{
-  int size = 4;
-  int nNew[size];
-
-  if(fest_rank == 0)
-    MPI_Recv(nNew, size, MPI_INT, MPI_ANY_SOURCE, CRACK_TAG1, joint_comm, MPI_STATUS_IGNORE);
-
-  MPI_Bcast(nNew, 4, MPI_INT, 0, fest_comm);
-
-  numConnUpdate = nNew[1];
-  numLSUpdate = nNew[2];
-  newNodes = nNew[3];
-
-  return nNew[0] > 0;
-}
-
-//---------------------------------------------------------------
-
-void
-AerosMessenger::GetInitialPhantomNodes(int newNodes, vector<Vec3D>& xyz, int nNodes)
-{
-  int size = newNodes*3;
-
-  double coords[size];
-
-  if(fest_rank == 0) {
-    // assume the correct ordering: nNodes, nNodes+1, ..., nNodes+newNodes-1
-    MPI_Recv(coords, size, MPI_DOUBLE, MPI_ANY_SOURCE, CRACK_TAG4, joint_comm, MPI_STATUS_IGNORE);
-  }
-
-  MPI_Bcast(coords, size, MPI_DOUBLE, 0, fest_comm);
-
-  for(int i = 0; i < newNodes; i++)
-    for(int j = 0; j < 3; j++) {
-      xyz[nNodes + i][j] = coords[i * 3 + j];
-    }
-}
-
-//---------------------------------------------------------------
-
-void
-AerosMessenger::GetNewCracking(int numConnUpdate, int numLSUpdate, int newNodes)
-{
-
-  if(numConnUpdate < 1) {
-    return;
-  }
-
-  int phantElems[5 * numConnUpdate]; // elem id and node id
-  double phi[4 * numLSUpdate];
-  int phiIndex[numLSUpdate];
-  int new2old[std::max(1, newNodes * 2)]; // in the case of element deletion, newNodes might be 0
-
-  GetNewCrackingCore(numConnUpdate, numLSUpdate, phantElems, phi, phiIndex, new2old, newNodes);
-
-  if(elemType != 4) {
-    print_error("*** Error: only support quadrangle elements for cracking!\n");
-    exit_mpi();
-  }
-
-  nNodes += newNodes;
-  nElems += cracking->updateCracking(numConnUpdate, numLSUpdate, phantElems, phi, phiIndex, surface.elems, 
-                                     nNodes, new2old, newNodes);
-
-  //update info stored in Triangulated surface
-  surface.active_nodes = nNodes;
-  surface.active_elems = nElems; 
-
-  if(nElems != cracking->usedTrias()) {
-    print_error("*** Error: inconsistency in the number of used triangles. (Software bug.)\n");
-    exit_mpi();
-  }
-
-  if(newNodes!=0)
-    assert(numAerosProcs==1); //I think this is a current limitation
-
-  if(fest_rank == 0 && newNodes) 
-    numStrNodes[0][0] = nNodes; //Assuming only talking to one structure proc?
-
-
-  if(newNodes!=0 && verbose>=1) {
-    print("- Received %d new nodes from Aero-S (due to fracture).\n", newNodes);
-  }
-}
-
-//---------------------------------------------------------------
-
-int 
-AerosMessenger::GetNewCracking()
-{
-  int newNodes, numConnUpdate, numLSUpdate;
-  bool need2update = GetNewCrackingStats(numConnUpdate, numLSUpdate, newNodes); // inputs will be modified
-  if(!need2update) {
-    assert(numConnUpdate == 0);
-    return 0;
-  }
-  GetNewCracking(numConnUpdate, numLSUpdate, newNodes);
-  return numConnUpdate;
-}
-
-//---------------------------------------------------------------
-
-void
-AerosMessenger::GetNewCrackingCore(int numConnUpdate, int numLSUpdate, int *phantoms, double *phi, int *phiIndex, 
-                                   int *new2old, int newNodes)
-{
-
-  int integer_pack_size = 5 * numConnUpdate + numLSUpdate + 2 * newNodes;
-  int integer_pack[integer_pack_size]; // KW: This should be a short array since there will not be many new cracked elements in
-                                       //     one time-step. Therefore it should be OK to create and destroy it repeatedly.
-
-  if(fest_rank == 0) {
-    MPI_Recv(integer_pack, integer_pack_size, MPI_INT, MPI_ANY_SOURCE, CRACK_TAG2, joint_comm, MPI_STATUS_IGNORE);
-  }
-  MPI_Bcast(integer_pack, integer_pack_size, MPI_INT, 0, fest_comm);
-
-  for(int i = 0; i < 5 * numConnUpdate; i++) {
-    phantoms[i] = integer_pack[i];
-    assert(integer_pack[i] >= 0);
-  }
-  for(int i = 0; i < numLSUpdate; i++) {
-    phiIndex[i] = integer_pack[5 * numConnUpdate + i];
-  }
-  for(int i = 0; i < newNodes; i++) {
-    new2old[2 * i] = integer_pack[5 * numConnUpdate + numLSUpdate + 2 * i];
-    new2old[2 * i + 1] = integer_pack[5 * numConnUpdate + numLSUpdate + 2 * i + 1];
-  }
-
-  if(fest_rank == 0) {
-    MPI_Recv(phi, 4*numLSUpdate, MPI_DOUBLE, MPI_ANY_SOURCE, CRACK_TAG3, joint_comm, MPI_STATUS_IGNORE);
-  }
-  MPI_Bcast(phi, 4*numLSUpdate, MPI_DOUBLE, 0, fest_comm);
-
-}
-
-//---------------------------------------------------------------
-
 int
 AerosMessenger::GetStructSubcyclingInfo()
 {
@@ -638,7 +435,7 @@ AerosMessenger::GetDisplacementAndVelocity()
 //---------------------------------------------------------------
 
 void
-AerosMessenger::SendM2CSuggestedTimeStep(double dtf0)
+AerosMessenger::SendFESTSuggestedTimeStep(double dtf0)
 {
   if(fest_rank == 0) {
 
@@ -740,9 +537,6 @@ AerosMessenger::ExchangeForA6()
 {
   SendForce();  
 
-  if(cracking)
-    GetNewCracking();
-
   GetDisplacementAndVelocity();
 }
 
@@ -775,9 +569,6 @@ AerosMessenger::FirstExchangeForC0()
 {
   GetInfo(); //get dt, tmax
 
-  if(cracking)
-    GetNewCracking();
-
   GetDisplacementAndVelocity();
 }
 
@@ -789,9 +580,6 @@ AerosMessenger::ExchangeForC0()
   SendForce();  
 
   GetInfo();
-
-  if(cracking)
-    GetNewCracking();
 
   GetDisplacementAndVelocity();
 }
