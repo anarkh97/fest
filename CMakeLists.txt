@@ -66,6 +66,7 @@ IoData.cpp
 ConcurrentProgramsHandler.cpp
 AerosMessenger.cpp
 TriangulatedSurface.cpp
+InterpolationLoadDriver.cpp
 LagrangianOutput.cpp
 Utils.cpp
 MathTools/rbf_interp.cpp
