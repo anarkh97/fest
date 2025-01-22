@@ -51,6 +51,9 @@ void InterpolationLoadDriver::Run()
   // This will populate the surface object from Aero-S.
   concurrent.InitializeMessengers(&surface, &force);
 
+  // Output recieved surface
+  lagout.OutputTriangulatedMesh(surface.X0, surface.elems);
+
   // allocated space for force over area if the output is requested.
   if(iod.output.force_over_area[0] != 0) 
     force_over_area = make_shared<vector<Vec3D>>(surface.active_nodes, Vec3D(0.)); 
@@ -128,7 +131,7 @@ InterpolationLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3
   MPI_Comm_size(comm, &mpi_size);
 
   int elems_per_rank = active_elems / mpi_size;
-  int remainder = active_nodes - elems_per_rank; // left-over nodes.
+  int remainder = active_elems - elems_per_rank; // left-over nodes.
 
   assert(remainder >= 0 and remainder < mpi_size); 
 
@@ -180,10 +183,9 @@ InterpolationLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3
     force[node3] += (1e6)*area*normal;
 
     if(force_over_area) {
-      // Reduce operation adds up force over area from all processors.
-      (*force_over_area)[node1] = 1e6 / mpi_size;
-      (*force_over_area)[node2] = 1e6 / mpi_size;
-      (*force_over_area)[node3] = 1e6 / mpi_size;
+      (*force_over_area)[node1] = 1e6*normal;
+      (*force_over_area)[node2] = 1e6*normal;
+      (*force_over_area)[node3] = 1e6*normal;
     }
 
   }

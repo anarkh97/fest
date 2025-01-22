@@ -31,7 +31,8 @@ int main(int argc, char* argv[])
 
   //! Special tool for nearest neighbor pressure interpolations.
   InterpolationLoadDriver interp_load_driver(iod, comm, concurrent);
-   
+  MPI_Barrier(fest_comm); 
+
   //! finalize 
   concurrent.Destroy();
   MPI_Finalize();

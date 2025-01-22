@@ -150,7 +150,7 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
         fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
         exit(-1);
       }
-      fprintf(force_file, "Vector SOLUTION under NLDynamic for MyNodes\n");
+      fprintf(force_file, "Vector FORCE under NLDynamic for MyNodes\n");
       fprintf(force_file, "%d\n", (int)F.size());
       fclose(force_file);
     }
@@ -168,7 +168,7 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
     assert(F2_ptr); // should not be NULL
 
     char outname[512];
-    sprintf(outname, "%s%s", iod_lag.prefix, iod_lag.force);
+    sprintf(outname, "%s%s", iod_lag.prefix, iod_lag.force_over_area);
 
     if(fovera_file == NULL) { //create new file and write header
       fovera_file = fopen(outname, "w");
@@ -176,7 +176,7 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
         fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
         exit(-1);
       }
-      fprintf(fovera_file, "Vector SOLUTION under NLDynamic for MyNodes\n");
+      fprintf(fovera_file, "Vector FORCE_OVER_AREA under NLDynamic for MyNodes\n");
       fprintf(fovera_file, "%d\n", (int)F2_ptr->size());
       fclose(fovera_file);
     }
