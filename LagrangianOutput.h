@@ -8,6 +8,7 @@
 
 #include<IoData.h>
 #include<Utils.h>
+#include<Vector3D.h>
 
 /****************************************
  * class LagrangianOutput is responsible

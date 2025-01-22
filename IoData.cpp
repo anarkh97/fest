@@ -178,61 +178,91 @@ void LagrangianMeshOutputData::setup(const char *name, ClassAssigner *father)
 
 //------------------------------------------------------------------------------
 
-TransientInputData::TransientInputData()
+MetaInputData::MetaInputData()
 {
   metafile = "";
-  snapshot_file_prefix = "";
-  snapshot_file_suffix = "";
+  //snapshot_file_prefix = "";
+  //snapshot_file_suffix = "";
 
-  basis = INVERSE_MULTIQUADRIC;
-  numPoints = 8;
+  basis = GAUSSIAN;
+  numPoints = 3;
 }
 
 //------------------------------------------------------------------------------
 
-void TransientInputData::setup(const char *name, ClassAssigner *father)
+void MetaInputData::setup(const char *name, ClassAssigner *father)
 {
-  ClassAssigner *ca = new ClassAssigner(name, 6, father);
+  ClassAssigner *ca = new ClassAssigner(name, 3, father);
   
-  new ClassStr<TransientInputData>(ca, "MetaFile", this, &TransientInputData::metafile);
+  new ClassStr<MetaInputData>(ca, "MetaFile", this, &MetaInputData::metafile);
 
-  new ClassStr<TransientInputData>(ca, "SnapshotFilePrefix", this, 
-          &TransientInputData::snapshot_file_prefix);
+  //new ClassStr<MetaInputData>(ca, "SnapshotFilePrefix", this, 
+  //        &MetaInputData::snapshot_file_prefix);
 
-  new ClassStr<TransientInputData>(ca, "SnapshotFileSuffix", this, 
-          &TransientInputData::snapshot_file_suffix);
+  //new ClassStr<MetaInputData>(ca, "SnapshotFileSuffix", this, 
+  //        &MetaInputData::snapshot_file_suffix);
 
-  new ClassToken<TransientInputData> (ca, "SpatialInterpolationBasis", this,
-     reinterpret_cast<int TransientInputData::*>(&TransientInputData::basis), 4,
+  new ClassToken<MetaInputData> (ca, "MetaInterpolationBasis", this,
+     reinterpret_cast<int MetaInputData::*>(&MetaInputData::basis), 4,
      "Multiquadric", 0, "InverseMultiquadric", 1, "ThinPlateSpline", 2, "Gaussian", 3);
 
-  new ClassInt<TransientInputData>(ca, "NumberOfBasisPoints", this, &TransientInputData::numPoints);
-
-  output.setup("Output", ca); //there is another "Output", must provide "ca" to distinguish
+  new ClassInt<MetaInputData>(ca, "NumberOfBasisPoints", this, &MetaInputData::numPoints);
 }
 
 //------------------------------------------------------------------------------
 
-SpecialToolsData::SpecialToolsData()
+SpatialInterpolationData::SpatialInterpolationData()
 {
-  type = NONE;
+  basis = INVERSE_MULTIQUADRIC;
+  numPoints = 8;
+
+  projection = XXX;
+}
+
+//------------------------------------------------------------------------------
+
+void SpatialInterpolationData::setup(const char *name, ClassAssigner *father)
+{
+
+  ClassAssigner *ca = new ClassAssigner(name, 3, father);
+  
+  new ClassToken<SpatialInterpolationData> (ca, "SpatialInterpolationBasis", this,
+     reinterpret_cast<int SpatialInterpolationData::*>(&SpatialInterpolationData::basis), 4,
+     "Multiquadric", 0, "InverseMultiquadric", 1, "ThinPlateSpline", 2, "Gaussian", 3);
+
+  new ClassInt<SpatialInterpolationData>(ca, "NumberOfBasisPoints", this, 
+      &SpatialInterpolationData::numPoints);
+
+  new ClassToken<SpatialInterpolationData> (ca, "ProjectionType", this,
+     reinterpret_cast<int SpatialInterpolationData::*>(&SpatialInterpolationData::projection), 3,
+     "XXX", 0, "YYY", 1);
+
+}
+
+//------------------------------------------------------------------------------
+
+InterpolationDriverData::InterpolationDriverData()
+{
+  //type = NONE;
   verbose = LOW;
 }
 
 //------------------------------------------------------------------------------
 
-void SpecialToolsData::setup(const char *name, ClassAssigner *father)
+void InterpolationDriverData::setup(const char *name, ClassAssigner *father)
 {
   ClassAssigner *ca = new ClassAssigner(name, 3, father);
 
-  new ClassToken<SpecialToolsData> (ca, "Type", this,
-     reinterpret_cast<int SpecialToolsData::*>(&SpecialToolsData::type), 3,
-     "None", 0, "DynamicLoadCalculation", 1, "EquationOfStateTabulation", 2);
-  new ClassToken<SpecialToolsData>(ca, "VerboseScreenOutput", this,
-      reinterpret_cast<int SpecialToolsData::*>(&SpecialToolsData::verbose), 3,
+  //new ClassToken<InterpolationDriverData> (ca, "Type", this,
+  //   reinterpret_cast<int InterpolationDriverData::*>(&InterpolationDriverData::type), 3,
+  //   "None", 0, "DynamicLoadCalculation", 1, "EquationOfStateTabulation", 2);
+
+  new ClassToken<InterpolationDriverData>(ca, "VerboseScreenOutput", this,
+      reinterpret_cast<int InterpolationDriverData::*>(&InterpolationDriverData::verbose), 3,
       "Low", 0, "Medium", 1, "High", 2);
 
-  transient_input.setup("TransientInputData");
+  meta_input.setup("MetaInputData");
+  spatial_interp.setup("SpatialInterpolationData");
 } 
 
 //------------------------------------------------------------------------------
@@ -294,7 +324,8 @@ void IoData::setupCmdFileVariables()
 {
 
   concurrent.setup("ConcurrentPrograms");
-  special_tools.setup("SpecialTools");
+  interp_driver.setup("InterpolationDriver");
+  output.setup("Output");
 
 }
 

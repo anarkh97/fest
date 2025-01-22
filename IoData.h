@@ -10,8 +10,6 @@
 #include <map>
 #include <parser/Assigner.h>
 #include <parser/Dictionary.h>
-#include <Vector2D.h>
-#include <Vector3D.h>
 #include <Utils.h>
 
 using std::map;
@@ -146,20 +144,21 @@ struct ConcurrentProgramsData {
 
 //------------------------------------------------------------------------------
 
-struct TransientInputData {
+//! Optimization level data is encapsulated here. For example, paths to existing
+//! FSI simulations, number of simulations used for approximation, and radial 
+//! basis function used for nearest neighbor interpolations.
+struct MetaInputData {
 
   const char* metafile;
-  const char* snapshot_file_prefix; 
-  const char* snapshot_file_suffix; 
+  //const char* snapshot_file_prefix; 
+  //const char* snapshot_file_suffix; 
   
   enum BasisFunction {MULTIQUADRIC = 0, INVERSE_MULTIQUADRIC = 1, 
                       THIN_PLATE_SPLINE = 2, GAUSSIAN = 3, SIZE = 4} basis; //basis function for interpolation
   int numPoints; //number of points for (unstructured) interpolation
 
-  LagrangianMeshOutputData output;
-
-  TransientInputData();
-  ~TransientInputData() {}
+  MetaInputData();
+  ~MetaInputData() {}
 
   void setup(const char *, ClassAssigner * = 0);
 
@@ -167,16 +166,44 @@ struct TransientInputData {
 
 //------------------------------------------------------------------------------
 
-struct SpecialToolsData {
+//! This data structure contains user inputs for spacial reconstruction of 
+//! fluid-structure interface pressure based on exisiting FSI simulations.
+//! Radial basis interpolations are used for the reconstructions, whose basis 
+//! functions can be different from the meta-level basis functions. The data
+//! structure also contains user input for projecting existing FSI simulation
+//! wetted surfaces onto the current fluid-structure interface 
+//! (or wetted surface).
+struct SpatialInterpolationData {
 
-  enum Type {NONE = 0, DYNAMIC_LOAD_CALCULATION = 1, EOS_TABULATION = 2, SIZE = 3} type;
+  // radial basis inputs.
+  enum BasisFunction {MULTIQUADRIC = 0, INVERSE_MULTIQUADRIC = 1,
+                      THIN_PLATE_SPLINE = 2, GAUSSIAN = 3, SIZE = 4} basis; //basis function for interpolation
+  int numPoints; //number of points for (unstructured) interpolation
+
+  // mapping (or projection) inputs.
+  enum ProjectionType {XXX = 0, YYY = 1} projection;
+
+  SpatialInterpolationData();
+  ~SpatialInterpolationData() {}
+
+  void setup(const char *, ClassAssigner * = 0);
+
+};
+
+//------------------------------------------------------------------------------
+
+struct InterpolationDriverData {
+
+  // AN: could be repurposed later.
+  //enum Type {NONE = 0, DYNAMIC_LOAD_CALCULATION = 1, EOS_TABULATION = 2, SIZE = 3} type;
   
   enum VerbosityLevel {LOW = 0, MEDIUM = 1, HIGH = 2} verbose;
 
-  TransientInputData transient_input;
+  MetaInputData meta_input;
+  SpatialInterpolationData spatial_interp;
 
-  SpecialToolsData();
-  ~SpecialToolsData() {}
+  InterpolationDriverData();
+  ~InterpolationDriverData() {}
 
   void setup(const char *, ClassAssigner * = 0);
 };
@@ -192,7 +219,9 @@ public:
 
   ConcurrentProgramsData concurrent;
 
-  SpecialToolsData special_tools;
+  InterpolationDriverData interp_driver;
+
+  LagrangianMeshOutputData output;
 
 public:
 

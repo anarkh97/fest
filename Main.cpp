@@ -13,16 +13,16 @@ int main(int argc, char* argv[])
   MPI_Init(NULL,NULL); //called together with all concurrent programs -> MPI_COMM_WORLD
   start_time = walltime(); //for timing purpose only (calls MPI_Wtime)
 
-  //! Print header (global proc #0, assumed to be a M2C proc)
-  //fest_comm = MPI_COMM_WORLD;
+  //! Print header (global proc #0, assumed to be a FEST proc)
+  fest_comm = MPI_COMM_WORLD;
   printHeader(argc, argv);
 
   //! Read user's input file (read the parameters)
   IoData iod(argc, argv);
-  verbose = iod.special_tools.verbose;
+  verbose = iod.interp_driver.verbose;
 
   //! Partition MPI, if there are concurrent programs
-  MPI_Comm comm; //this is going to be the M2C communicator
+  MPI_Comm comm; //this is going to be the FEST communicator
   ConcurrentProgramsHandler concurrent(iod, MPI_COMM_WORLD, comm);
   fest_comm = comm; //correct it
 
