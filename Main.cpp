@@ -29,7 +29,7 @@ int main(int argc, char* argv[])
   iod.finalize();
 
   //! Special tool for nearest neighbor pressure interpolations.
-  InterpolationLoadDriver interp_load_driver(iod, comm, concurrent);
+  //InterpolationLoadDriver interp_load_driver(iod, comm, concurrent);
    
   //! finalize 
   concurrent.Destroy();
