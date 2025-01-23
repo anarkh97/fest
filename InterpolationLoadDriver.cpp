@@ -130,70 +130,56 @@ InterpolationLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3
   MPI_Comm_rank(comm, &mpi_rank);
   MPI_Comm_size(comm, &mpi_size);
 
-  int elems_per_rank = active_elems / mpi_size;
-  int remainder = active_elems - elems_per_rank*mpi_size; // left-over elements.
+  int nodes_per_rank = active_nodes / mpi_size;
+  int remainder = active_nodes - nodes_per_rank*mpi_size; // left-over nodes.   
 
   assert(remainder >= 0 and remainder < mpi_size); 
 
-  vector<int> counts(mpi_size, -1);      // stores the number of elements each rank is responsible for.
+  vector<int> counts(mpi_size, -1);      // stores the number of nodes each rank is responsible for.
   vector<int> start_index(mpi_size, -1); // stores the starting index for each rank in the surface/force vectors.
 
   for(int i=0; i<mpi_size; ++i) {
 
     // ranks 0 -- remainder - 1 handle an extra node.
-    counts[i] = (i < remainder) ? elems_per_rank + 1 : elems_per_rank;
-    start_index[i] = (i < remainder) ? (elems_per_rank + 1)*i : elems_per_rank*i + remainder;
+    counts[i] = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
+    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i + remainder;
 
   }
 
-  assert(start_index.back() + counts.back() == active_elems);
+  assert(start_index.back() + counts.back() == active_nodes);
 
-  int my_elem_size = counts[mpi_rank];
+  int my_node_size = counts[mpi_rank];
   int my_start_index = start_index[mpi_rank];
 
   // clear old force values
-  for(int index=my_start_index; index<my_elem_size; ++index) {
-
-    // this element's nodes
-    int node1 = surface.elems[index][0];
-    int node2 = surface.elems[index][1];
-    int node3 = surface.elems[index][2];
-
-    // clear old values in the force vector
-    force[node1] = Vec3D(0.);
-    force[node2] = Vec3D(0.);
-    force[node3] = Vec3D(0.);
-
-  }
+  for(int index=my_start_index; index<my_node_size; ++index) 
+    force[index] = Vec3D(0.);
 
   // compute forces
-  for(int index=my_start_index; index<my_elem_size; ++index) {
+  Vec3D normalz(0.0, 0.0, 1.0);
+  for(int index=my_start_index; index<my_node_size; ++index) {
 
-    // this element's nodes
-    int node1 = surface.elems[index][0];
-    int node2 = surface.elems[index][1];
-    int node3 = surface.elems[index][2];
+    // elements associated with this node
+    auto elems = surface.node2elem[index];
 
     // calculate force
-    double area  = surface.elemArea[index]/3;
-    Vec3D normal = surface.elemNorm[index];
-
-    force[node1] += (1e6)*area*normal;
-    force[node2] += (1e6)*area*normal;
-    force[node3] += (1e6)*area*normal;
-
-    if(force_over_area) {
-      (*force_over_area)[node1] = 1e6*normal;
-      (*force_over_area)[node2] = 1e6*normal;
-      (*force_over_area)[node3] = 1e6*normal;
+    for(int i=0; i<(int)elems.size(); ++i) {
+      double area = surface.elemArea[i]/3;
+      force[index] += (1e6)*area*normalz;
     }
+
+    if(force_over_area) 
+      (*force_over_area)[index] = 1e6*normalz;
 
   }
 
   // communication
-  MPI_Allreduce(MPI_IN_PLACE, (double*)force.data(), active_nodes*3, MPI_DOUBLE, MPI_SUM, comm);
-  if(force_over_area)
-    MPI_Allreduce(MPI_IN_PLACE, (double*)force_over_area->data(), active_nodes*3, MPI_DOUBLE, MPI_SUM, comm);
+  for(int i=0; i<mpi_size; i++) {
+    counts[i] *= 3;
+    start_index[i] *= 3;
+  }
+  MPI_Allgatherv(MPI_IN_PLACE, 3*my_node_size, MPI_DOUBLE, (double*)force.data(), 
+                 counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
 }
 
