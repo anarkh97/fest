@@ -20,12 +20,6 @@ InterpolationLoadDriver::InterpolationLoadDriver(IoData &iod_, MPI_Comm &comm_,
     exit_mpi();
   }
 
-  if(strcmp(iod.interp_driver.meta_input.metafile, "") == 0) {
-    print_error("*** Error: Metafile with paths to existing FSI simulations and "
-                "their design parameters was not specified. Aborting.\n");
-    exit_mpi();
-  }
-
   // Setup the interpolator.
   ino = new InterpolationOperator(iod, comm);
 
@@ -141,6 +135,7 @@ InterpolationLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3
 #endif  
 
   // use the interpolator to estimate interface forces.
+  ino->ComputeApproximateForces(surface, force, force_over_area, t);
 
 }
 
