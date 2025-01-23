@@ -44,8 +44,8 @@ void InterpolationLoadDriver::Run()
   // objects for the embedded surface and boundary force.
   // Aero-S will update the surface with computed displacementes.
   // We will populate force and send it to Aero-S.
-  TriangulatedSurface        surface;
-  vector<Vec3D>              force; 
+  TriangulatedSurface       surface;
+  vector<Vec3D>             force; 
   shared_ptr<vector<Vec3D>> force_over_area = nullptr; // only used for output
 
   // This will populate the surface object from Aero-S.
@@ -131,7 +131,7 @@ InterpolationLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3
   MPI_Comm_size(comm, &mpi_size);
 
   int elems_per_rank = active_elems / mpi_size;
-  int remainder = active_elems - elems_per_rank; // left-over nodes.
+  int remainder = active_elems - elems_per_rank*mpi_size; // left-over elements.
 
   assert(remainder >= 0 and remainder < mpi_size); 
 
