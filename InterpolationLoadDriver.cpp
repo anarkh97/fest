@@ -1,4 +1,5 @@
 #include<InterpolationLoadDriver.h>
+#include<cstring>
 
 using std::vector;
 using std::shared_ptr;
@@ -10,7 +11,8 @@ extern double start_time;
 
 InterpolationLoadDriver::InterpolationLoadDriver(IoData &iod_, MPI_Comm &comm_, 
                                                  ConcurrentProgramsHandler &concurrent_)
-                       : iod(iod_), comm(comm_), concurrent(concurrent_), lagout(comm_, iod_.output)
+                       : iod(iod_), comm(comm_), concurrent(concurrent_), 
+		         lagout(comm_, iod_.output)
 {
   if(iod.concurrent.aeros.fsi_algo == AerosCouplingData::NONE) {
     print_error("*** Error: Currently FEST operate as a stand-alone program. "
@@ -18,8 +20,14 @@ InterpolationLoadDriver::InterpolationLoadDriver(IoData &iod_, MPI_Comm &comm_,
     exit_mpi();
   }
 
-  // All meta-level setup, such as neares neighbor weights and surface maps,
-  // will be computed here, before time stepping.
+  if(strcmp(iod.interp_driver.meta_input.metafile, "") == 0) {
+    print_error("*** Error: Metafile with paths to existing FSI simulations and "
+                "their design parameters was not specified. Aborting.\n");
+    exit_mpi();
+  }
+
+  // Setup the interpolator.
+  ino = new InterpolationOperator(iod, comm);
 
   // Run time integration. 
   // Note that FEST does not perform time integration, strictly
@@ -33,6 +41,8 @@ InterpolationLoadDriver::InterpolationLoadDriver(IoData &iod_, MPI_Comm &comm_,
 InterpolationLoadDriver::~InterpolationLoadDriver()
 {
   // smart pointers are automatically deleted.
+  if(ino)
+    ino->Destroy();
 }
 
 //------------------------------------------------------------
@@ -50,6 +60,11 @@ void InterpolationLoadDriver::Run()
 
   // This will populate the surface object from Aero-S.
   concurrent.InitializeMessengers(&surface, &force);
+
+  // All meta-level setup, such as nearest neighbor weights and surface maps,
+  // will be computed here, before time stepping.
+  ino->BuildSurfacesToSurfaceMap(surface);
+  double overhead_time = walltime();
 
   // Output recieved surface
   lagout.OutputTriangulatedMesh(surface.X0, surface.elems);
@@ -106,7 +121,9 @@ void InterpolationLoadDriver::Run()
   print("\033[0;32m==========================================\033[0m\n");
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
-  print("Total Computation Time: %f sec.\n", walltime() - start_time);
+  print("Total File I/O Overhead Time: %f sec.\n", overhead_time - start_time);
+  print("Total Time Integration Time : %f sec.\n", walltime()    - overhead_time);
+  print("Total Computation Time      : %f sec.\n", walltime()    - start_time);
   print("\n");
 
 }
@@ -116,6 +133,20 @@ void InterpolationLoadDriver::Run()
 void
 InterpolationLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3D> &force, 
                                        vector<Vec3D> *force_over_area, double t)
+{
+
+#ifdef DEBUG_CONNECTION
+  ConstantPressureForce(surface, force, force_over_area, t);
+  return;
+#endif  
+
+  // use the interpolator to estimate interface forces.
+
+}
+
+void
+InterpolationLoadDriver::ConstantPressureForce(TriangulatedSurface &surface, vector<Vec3D> &force, 
+                                               vector<Vec3D> *force_over_area, double t)
 {
   // pass a constant pressure * area to aero-s for testing.
 

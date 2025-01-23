@@ -31,6 +31,13 @@ find_package(Eigen3 3.3 REQUIRED)
 find_package(Boost 1.71 REQUIRED)
 #--------------------------------------------------------
 
+#-----------------------------
+# With this option, FEST will
+# send constant pressure forces
+# to aero-s.
+#add_definitions(-DDEBUG_CONNECTION)
+#-----------------------------
+
 # -----------------------------
 # for version control
 # Add a custom command that produces version.cpp, plus
@@ -66,6 +73,7 @@ IoData.cpp
 ConcurrentProgramsHandler.cpp
 AerosMessenger.cpp
 TriangulatedSurface.cpp
+InterpolationOperator.cpp
 InterpolationLoadDriver.cpp
 LagrangianOutput.cpp
 Utils.cpp
