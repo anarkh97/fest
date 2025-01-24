@@ -45,6 +45,8 @@ public:
 private:
 
   void ReadMetaFile();
+  void ReadMeshFile(const char *filename, vector<Vec3D> &Xs, vector<Int3> &Es);
+  void ReadMeshFileInTopFormat(const char *filename, vector<Vec3D> &Xs, vector<Int3> &Es);
 
 };
 
