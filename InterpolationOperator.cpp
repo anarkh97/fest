@@ -5,6 +5,7 @@
 #include<algorithm>
 
 #include<MathTools/rbf_interp.hpp>
+#include<MathTools/affine_transformation.h>
 
 using std::vector;
 using std::pair;
