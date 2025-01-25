@@ -35,19 +35,21 @@ public:
   ~SolutionData3D();
 
   
-  bool is_empty() const { return data_ptr->empty(); }
-  int get_size() const { return num_stamps + 3*num_data_rows; }
-  int get_rows() const { return num_data_rows; }
+  bool Empty() const { return data_ptr->empty(); }
+  int GetSize() const { return num_stamps + 3*num_data_rows; }
+  int GetRows() const { return num_data_rows; }
 
-  std::vector<Vec3D> &find(double time);
-  std::vector<Vec3D>  find(double time) const;
+  std::map<double, std::vector<Vec3D>> &GetMap() const { return *data_ptr; }
 
-  void move_map(std::map<double, std::vector<Vec3D>> &&);
-  void insert(double time, std::vector<Vec3D> &&);
+  std::vector<Vec3D> &Find(double time);
+  std::vector<Vec3D>  Find(double time) const;
+
+  void MoveMap(std::map<double, std::vector<Vec3D>> &&);
+  void Insert(double time, std::vector<Vec3D> &&);
 
   // methods for communication
-  void flatten(std::vector<double> &flat); 
-  /*SolutionData3D&*/ void rebuild(const std::vector<double> &other, int num_rows);
+  void Flatten(std::vector<double> &flat); 
+  /*SolutionData3D&*/ void Rebuild(const std::vector<double> &other, int num_rows);
 
 };
 

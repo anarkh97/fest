@@ -74,12 +74,15 @@ ConcurrentProgramsHandler.cpp
 AerosMessenger.cpp
 TriangulatedSurface.cpp
 SolutionData3D.cpp
-InterpolationOperator.cpp
-InterpolationLoadDriver.cpp
+FileHandler3D.cpp
+DynamicLoadOperator.cpp
+ConstantLoadOperator.cpp
+SimpleInterpolationOperator.cpp
+MappedInterpolationOperator.cpp
+DynamicLoadDriver.cpp
 LagrangianOutput.cpp
 Utils.cpp
 MathTools/rbf_interp.cpp
-MathTools/affine_transformation.cpp
 )
 
 # link to libraries

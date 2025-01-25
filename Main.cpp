@@ -1,6 +1,6 @@
 #include<ctime>
 #include<ConcurrentProgramsHandler.h>
-#include<InterpolationLoadDriver.h>
+#include<DynamicLoadDriver.h>
 
 int verbose;
 double start_time;
@@ -30,10 +30,11 @@ int main(int argc, char* argv[])
   iod.finalize();
 
   //! Special tool for nearest neighbor pressure interpolations.
-  InterpolationLoadDriver interp_load_driver(iod, comm, concurrent);
+  DynamicLoadDriver load_driver(iod, comm, concurrent);
   MPI_Barrier(fest_comm); 
 
   //! finalize 
+  load_driver.Destroy();
   concurrent.Destroy();
   MPI_Finalize();
   

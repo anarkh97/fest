@@ -32,7 +32,7 @@ SolutionData3D::~SolutionData3D()
 //! Takes ownership of the input map. It will be destroyed in the
 //! calling function.
 void
-SolutionData3D::move_map(std::map<double, std::vector<Vec3D>> &&input_map)
+SolutionData3D::MoveMap(std::map<double, std::vector<Vec3D>> &&input_map)
 {
   data_ptr       = std::make_shared<std::map<double, std::vector<Vec3D>>>(
                      std::move(input_map));
@@ -43,10 +43,10 @@ SolutionData3D::move_map(std::map<double, std::vector<Vec3D>> &&input_map)
 //------------------------------------------------------------
 
 std::vector<Vec3D>&
-SolutionData3D::find(double time)
+SolutionData3D::Find(double time)
 {
 
-  assert(!is_empty()); // should not be empty
+  assert(!Empty()); // should not be empty
   return data_ptr->at(time); // will throw an error if time is not found.
 
 }
@@ -54,10 +54,10 @@ SolutionData3D::find(double time)
 //------------------------------------------------------------
 
 std::vector<Vec3D>
-SolutionData3D::find(double time) const
+SolutionData3D::Find(double time) const
 {
 
-  assert(!is_empty()); // should not be empty
+  assert(!Empty()); // should not be empty
   return data_ptr->at(time); // will throw an error if time is not found.
 
 }
@@ -65,7 +65,7 @@ SolutionData3D::find(double time) const
 //------------------------------------------------------------
 
 void
-SolutionData3D::insert(double time, std::vector<Vec3D> &&data)
+SolutionData3D::Insert(double time, std::vector<Vec3D> &&data)
 {
 
   (*data_ptr)[time] = std::move(data);
@@ -77,7 +77,7 @@ SolutionData3D::insert(double time, std::vector<Vec3D> &&data)
 //------------------------------------------------------------
 
 void
-SolutionData3D::flatten(std::vector<double> &flat)
+SolutionData3D::Flatten(std::vector<double> &flat)
 {
 
   assert(data_ptr); // should not be null
@@ -112,7 +112,7 @@ SolutionData3D::flatten(std::vector<double> &flat)
 
 //SolutionData3D&
 void
-SolutionData3D::rebuild(const std::vector<double> &other, int rows)
+SolutionData3D::Rebuild(const std::vector<double> &other, int rows)
 {
 
   // assign an empty map
