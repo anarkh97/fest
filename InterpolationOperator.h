@@ -2,11 +2,15 @@
 #define _INTERPOLATION_OPERATOR_
 
 #include<IoData.h>
+#include<KDTree.h>
 #include<Vector3D.h>
+#include<SolutionData3D.h>
 #include<TriangulatedSurface.h>
 #include<string>
 #include<vector>
 #include<map>
+
+typedef KDTree<PointIn3D,3> K3DTree;
 
 class InterpolationOperator {
 
@@ -30,6 +34,14 @@ class InterpolationOperator {
                PARAMETER_END};
   std::map<Fields, int> field2col;
 
+  //! The target node index is mapped to a vector of barycentric
+  //! weights. The vector is of size 3*N, where N is the number
+  //! of proximal (nearby) FSI simulation provided in the metafile.
+  std::map<int, std::vector<double>> barycenter_map;
+
+  //! Stores the solution data of each proximal FSI simulation
+  //! provided in the metafile.
+  std::vector<SolutionData3D> proxi_solutions;
 
 public:
 
@@ -44,9 +56,13 @@ public:
 
 private:
 
+  void LoadExistingSolutions();
   void ReadMetaFile();
-  void ReadMeshFile(const char *filename, vector<Vec3D> &Xs, vector<Int3> &Es);
-  void ReadMeshFileInTopFormat(const char *filename, vector<Vec3D> &Xs, vector<Int3> &Es);
+  void ReadMeshFile(const char *filename, std::vector<Vec3D> &Xs, std::vector<Int3> &Es);
+  void ReadSolutionFile(const char *filename, SolutionData3D &S);
+  void ReadMeshFileInTopFormat(const char *filename, std::vector<Vec3D> &Xs, std::vector<Int3> &Es);
+
+  void BuildKDTree(std::vector<Vec3D> &Xs, K3DTree* tree, std::vector<PointIn3D> &p);
 
 };
 

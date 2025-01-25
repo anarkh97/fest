@@ -73,6 +73,7 @@ IoData.cpp
 ConcurrentProgramsHandler.cpp
 AerosMessenger.cpp
 TriangulatedSurface.cpp
+SolutionData3D.cpp
 InterpolationOperator.cpp
 InterpolationLoadDriver.cpp
 LagrangianOutput.cpp
