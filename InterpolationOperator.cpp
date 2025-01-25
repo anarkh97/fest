@@ -42,6 +42,17 @@ void InterpolationOperator::Destroy()
 
 //------------------------------------------------------------
 
+void InterpolationOperator::SetupInterpolator(TriangulatedSurface &surface)
+{
+
+  if(false) // AN: TODO: add an option in the IoData
+    BuildSurfacesToSurfaceMap(surface);
+  LoadExistingSolutions();
+
+}
+
+//------------------------------------------------------------
+
 void 
 InterpolationOperator::ReadMetaFile()
 {
@@ -815,7 +826,120 @@ void
 InterpolationOperator::ComputeApproximateForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
                                                 std::vector<Vec3D> *force_over_area, double t)
 {
-  //
+  if(!node2nodes.empty()) { 
+ 
+    InterpolateInMetaSpaceWithMap(surface, force, force_over_area, t);
+
+  }
+  else {
+
+    // Assuming one-to-one mapping. That means,
+    // the surfaces of target and each of proximal points is 
+    // of consists identical nodes. Hence, we can simply use
+    // node index to access data from different surfaces.
+    
+    InterpolateInMetaSpaceNoMap(surface, force, force_over_area, t);
+
+  }
+
+}
+
+//------------------------------------------------------------
+
+void
+InterpolationOperator::InterpolateInMetaSpaceNoMap(TriangulatedSurface &surface, vector<Vec3D> &force, 
+                                                   vector<Vec3D> *force_over_area, double t)
+{
+
+  int active_nodes = surface.active_nodes;
+  int num_points   = iod_meta.numPoints;
+
+  vector<Vec3D> &Xs = surface.X;
+
+  assert((int)Xs.size() == active_nodes); // cracking not supported
+
+  int mpi_rank, mpi_size;
+  MPI_Comm_rank(comm, &mpi_rank);
+  MPI_Comm_size(comm, &mpi_size);
+  int nodes_per_rank = active_nodes / mpi_size;
+  int remainder      = active_nodes - nodes_per_rank*mpi_size;
+
+  assert(remainder >=0 and remainder < mpi_size);
+
+  vector<int> counts(mpi_size, -1);
+  vector<int> start_index(mpi_size, -1);
+
+  for(int i=0; i<mpi_size; ++i) {
+    counts[i]      = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
+    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i;
+  }
+
+  assert(start_index.back() + counts.back() == active_nodes);
+
+  int my_block_size  = counts[mpi_rank];
+  int my_start_index = start_index[mpi_rank];
+
+  //choose a radial basis function for interpolation
+  void (*phi)(int, double[], double, double[]); //a function pointer
+  switch (iod_meta.basis) {
+    case MetaInputData::MULTIQUADRIC :
+      phi = MathTools::phi1;  break;
+    case MetaInputData::INVERSE_MULTIQUADRIC :
+      phi = MathTools::phi2;  break;
+    case MetaInputData::THIN_PLATE_SPLINE :
+      phi = MathTools::phi3;  break;
+    case MetaInputData::GAUSSIAN :
+      phi = MathTools::phi4;  break;
+    default :
+      phi = MathTools::phi4;  break; //Gaussian
+  }
+
+  // clear old values
+  for(int index=my_start_index; index<my_block_size; ++index) {
+    force[index]              = Vec3D(0.0);
+    (*force_over_area)[index] = Vec3D(0.0);
+  }
+  
+
+  // compute forces
+  for(int index=my_start_index; index<my_block_size; ++index) {
+
+     // elements attached to this node
+     auto elems = surface.node2elem[index];
+
+     // values from existing solutions at this node
+     vector<Vec3D> stored_solutions(num_points, Vec3D(0.0));
+
+     for(int i=0; i<num_points; ++i) {
+       
+       
+
+     }
+
+
+  }	  
+}
+
+
+//------------------------------------------------------------
+
+void
+InterpolationOperator::InterpolateInMetaSpaceWithMap(TriangulatedSurface &surface, vector<Vec3D> &force, 
+                                                     vector<Vec3D> *force_over_area, double t)
+{
+
+  print_error("*** Error: InterpolationOperator::InterpolateInMetaSpaceWithMap not implemented yet.\n");
+  exit_mpi();
+
+}
+
+//------------------------------------------------------------
+
+void
+InterpolationOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
+                         double t, double* output, int size)
+{
+
 }
 
 //------------------------------------------------------------

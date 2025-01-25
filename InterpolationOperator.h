@@ -52,8 +52,7 @@ public:
   InterpolationOperator(IoData& iod_, MPI_Comm& comm_);
   ~InterpolationOperator() { }
 
-  void BuildSurfacesToSurfaceMap(TriangulatedSurface& surface);
-  void LoadExistingSolutions();
+  void SetupInterpolator(TriangulatedSurface& surface_);
   void Destroy();
 
   void ComputeApproximateForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
@@ -61,12 +60,27 @@ public:
 
 private:
 
+  // Methods for setup
+  void BuildSurfacesToSurfaceMap(TriangulatedSurface& surface);
+  void LoadExistingSolutions();
+
+  // Methods for reading surface and solution files.
   void ReadMetaFile();
   void ReadMeshFile(const char *filename, std::vector<Vec3D> &Xs, std::vector<Int3> &Es);
   void ReadSolutionFile(const char *filename, SolutionData3D &S);
   void ReadMeshFileInTopFormat(const char *filename, std::vector<Vec3D> &Xs, std::vector<Int3> &Es);
 
+  // Auxillary methods
   void BuildKDTree(std::vector<Vec3D> &Xs, K3DTree* tree, std::vector<PointIn3D> &p);
+
+  // Interpolation methods
+  void InterpolateInMetaSpaceNoMap(TriangulatedSurface &surface, std::vector<Vec3D> &force, 
+                                   std::vector<Vec3D> *force_over_area, double t);
+  void InterpolateInMetaSpaceWithMap(TriangulatedSurface &surface, std::vector<Vec3D> &force, 
+                                     std::vector<Vec3D> *force_over_area, double t);
+  void InterpolateInTime(double t1, double* input1, double t2, double* input2,
+                         double t, double* output, int size);
+
 
 };
 
