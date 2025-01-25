@@ -34,6 +34,10 @@ class InterpolationOperator {
                PARAMETER_END};
   std::map<Fields, int> field2col;
 
+  //! Maps target surface nodes to nodes from other surfaces
+  //! that are provided in the metafile.
+  std::map<int, std::vector<Int3>> node2nodes;
+
   //! The target node index is mapped to a vector of barycentric
   //! weights. The vector is of size 3*N, where N is the number
   //! of proximal (nearby) FSI simulation provided in the metafile.
@@ -49,6 +53,7 @@ public:
   ~InterpolationOperator() { }
 
   void BuildSurfacesToSurfaceMap(TriangulatedSurface& surface);
+  void LoadExistingSolutions();
   void Destroy();
 
   void ComputeApproximateForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
@@ -56,7 +61,6 @@ public:
 
 private:
 
-  void LoadExistingSolutions();
   void ReadMetaFile();
   void ReadMeshFile(const char *filename, std::vector<Vec3D> &Xs, std::vector<Int3> &Es);
   void ReadSolutionFile(const char *filename, SolutionData3D &S);

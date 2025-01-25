@@ -58,6 +58,7 @@ void InterpolationLoadDriver::Run()
   // All meta-level setup, such as nearest neighbor weights and surface maps,
   // will be computed here, before time stepping.
   ino->BuildSurfacesToSurfaceMap(surface);
+  ino->LoadExistingSolutions();
   double overhead_time = walltime();
 
   // Output recieved surface

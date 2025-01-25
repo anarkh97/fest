@@ -43,6 +43,7 @@ public:
   std::vector<Vec3D>  find(double time) const;
 
   void move_map(std::map<double, std::vector<Vec3D>> &&);
+  void insert(double time, std::vector<Vec3D> &&);
 
   // methods for communication
   void flatten(std::vector<double> &flat); 

@@ -306,9 +306,10 @@ InterpolationOperator::BuildSurfacesToSurfaceMap(TriangulatedSurface &surface)
       int nFound = proxi_trees[i]->findCandidates(Xn, candidates[i], 30);
 
       if(nFound < 3) {
-        print_error("*** Error: Cannot find the required number of nodes (3) "
-                    "on the surface %d provided in the metafile.\n", i+1);
-	exit_mpi();
+        fprintf(stderr, "\033[0;31m*** Error: Cannot find the required number "
+		        "of nodes (3) on the surface %d provided in the metafile."
+			"\n\033[0m", i+1);
+	exit(-1);
       }
 
       // sort by distance
@@ -331,6 +332,7 @@ InterpolationOperator::BuildSurfacesToSurfaceMap(TriangulatedSurface &surface)
       barycenter_map[index][3*i+1] = weights[1];
       barycenter_map[index][3*i+2] = weights[2];
 
+      // update node2nodes
     }
 
   }	  
@@ -386,8 +388,9 @@ void InterpolationOperator::LoadExistingSolutions()
     }
 
     if((int)send_data.size() != total_send_size) {
-      print_error("*** Error: Something went wrong while read data from solution files.\n");
-      exit_mpi();
+      fprintf(stderr, "\033[0;31m*** Error: Something went wrong while read data "
+                      "from solution files.\n\033[0m");
+      exit(-1);
     }
 
     // comminicate with other ranks
@@ -742,6 +745,67 @@ InterpolationOperator::ReadMeshFileInTopFormat(const char *filename, vector<Vec3
 void
 InterpolationOperator::ReadSolutionFile(const char *filename, SolutionData3D &S)
 {
+
+  std::fstream input(filename, std::fstream::in);
+  if(!input.is_open()) {
+    fprintf(stderr, "\033[0;31m*** Error: Cannot open file %s.\n\033[0m", filename);
+    exit(-1);
+  }
+
+  int num_nodes;
+
+  // start reading
+  std::string line, word;
+  // Line#1 --- ignored
+  input.ignore(512, '\n');
+  // Line#2 --- number nodes
+  getline(input, line);
+  std::istringstream iss(line);
+  iss >> num_nodes;
+
+  //assert(num_nodes == (int)proxi_surfaces[i].X.size());
+  
+  while(getline(input, line)) {
+
+    double time;
+    vector<Vec3D> data(num_nodes, Vec3D(0.0));
+
+    // read line
+    std::istringstream is(line);
+
+    // read time
+    is >> time;
+
+    // read data
+    for(int i=0; i<num_nodes; ++i) {
+
+      // read the next line
+      getline(input, line);
+      is.clear();
+      is.str(line);
+
+      double x, y, z;
+      is >> x >> y >> z;
+
+      if(is.fail()) {
+        fprintf(stderr, "\033[0;31m*** Error: Something went wrong while reading the "
+			"solution file (%s).\n\033[0;m", filename);
+	exit(-1);
+      }
+
+      data[i] = Vec3D(x, y, z);
+
+    }
+
+    // grows the SolutionData3D object.
+    // Note: data is "moved" to an internal container.
+    // It will no longer be available after this.
+    S.insert(time, std::move(data));
+
+  }
+
+  assert(!S.is_empty());
+  input.close();
 
 }
 

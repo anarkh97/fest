@@ -65,6 +65,18 @@ SolutionData3D::find(double time) const
 //------------------------------------------------------------
 
 void
+SolutionData3D::insert(double time, std::vector<Vec3D> &&data)
+{
+
+  (*data_ptr)[time] = std::move(data);
+  num_stamps        = data_ptr->size();
+  num_data_rows     = data_ptr->begin()->second.size();
+
+}
+
+//------------------------------------------------------------
+
+void
 SolutionData3D::flatten(std::vector<double> &flat)
 {
 
