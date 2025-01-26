@@ -557,38 +557,39 @@ FileHandler3D::ReadSolutionFile(string &filename, SolutionData3D &S)
   MPI_Comm_rank(comm, &mpi_rank);
   MPI_Comm_size(comm, &mpi_size);
 
-  int num_rows   = 0;
+  int soln_rows        = 0; // these are rows/nodes in the solution file.
+  int soln_total_size  = 0; // this is the total size of the data when flattened.
+  vector<double> soln;
 
   if(mpi_rank == 0) {
 
     // read the solution file.
     ReadSolutionFileSingleProcessor(filename, S);
 
-    // update the number of rows/nodes
-    num_rows = S.GetRows();
+    // update the sizes
+    soln_rows       = S.GetRows();
+    soln_total_size = S.GetSize();
 
-    // now flatten the data into one large vector for communication
-    vector<double> send_data;
-    S.Flatten(send_data);
-
-    // comminicate with other ranks
-    for(int i=1; i<mpi_size; ++i) {
-      MPI_Send(       &num_rows,               1,    MPI_INT, i, 0, comm);
-      MPI_Send(send_data.data(),send_data.size(), MPI_DOUBLE, i, 0, comm);
-    }
-    
-  }
-  else { // recieve data
-  
-    vector<double> recv_data;
-
-    MPI_Recv(       &num_rows,               1,    MPI_INT, 0, 0, comm, MPI_STATUS_IGNORE);
-    MPI_Recv(recv_data.data(),recv_data.size(),    MPI_INT, 0, 0, comm, MPI_STATUS_IGNORE);
-
-    // rebuild solutions from recieved data
-    S.Rebuild(recv_data, num_rows);
+    soln.resize(soln_total_size);
+    // this process copies the data in
+    S.Flatten(soln);
 
   }
+
+  // broadcast sizes to all ranks
+  MPI_Bcast(      &soln_rows, 1, MPI_INT, 0, comm);
+  MPI_Bcast(&soln_total_size, 1, MPI_INT, 0, comm);
+
+  // prepare to recieve read data on ranks other than root
+  if(mpi_rank != 0)
+    soln.resize(soln_total_size);
+
+  // broadcast the data vector to all ranks
+  MPI_Bcast(soln.data(), soln_total_size, MPI_DOUBLE, 0, comm);
+
+  // rebuild SolutionData3D on ranks other than root
+  if(mpi_rank != 0)
+    S.Rebuild(soln, soln_rows);
 
   // probably not needed.
   MPI_Barrier(comm);

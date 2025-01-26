@@ -82,9 +82,12 @@ SolutionData3D::Flatten(std::vector<double> &flat)
 
   assert(data_ptr); // should not be null
 
-  int container_size = num_stamps + num_data_rows*3;
+  int container_size = GetSize();
   if(flat.empty())
     flat.resize(container_size);
+  
+  // additional check
+  assert((int)flat.size() == container_size);
    
   int index = 0;
   for(const auto& [time, data] : *data_ptr) {
