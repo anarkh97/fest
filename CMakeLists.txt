@@ -18,6 +18,7 @@ SET(CMAKE_CXX_COMPILER mpicxx)
 
 # compiler flags (turn on all the warnings)
 set(CMAKE_CXX_FLAGS "-Wall -Wextra -Wno-reorder -Wno-unused-parameter")
+set(CMAKE_CXX_FLAGS "-Wno-delete-non-virtual-dtor")
 set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 

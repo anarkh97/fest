@@ -6,6 +6,7 @@ using std::shared_ptr;
 using std::make_shared;
 
 extern double start_time;
+extern int verbose;
 
 //------------------------------------------------------------
 
@@ -67,6 +68,9 @@ void DynamicLoadDriver::Run()
   dlo->BuildSurfacesToSurfaceMap(surface);
   double overhead_time = walltime();
 
+  if(verbose>1)
+    print("- Time taken for file I/O: %f sec.\n", overhead_time - start_time);
+
   // Output recieved surface
   lagout.OutputTriangulatedMesh(surface.X0, surface.elems);
 
@@ -123,7 +127,7 @@ void DynamicLoadDriver::Run()
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
   print("Total File I/O Overhead Time: %f sec.\n", overhead_time - start_time);
-  print("Total Time Integration Time : %f sec.\n", walltime()    - overhead_time);
+  print("Total Time For Integration  : %f sec.\n", walltime()    - overhead_time);
   print("Total Computation Time      : %f sec.\n", walltime()    - start_time);
   print("\n");
 

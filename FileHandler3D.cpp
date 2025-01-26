@@ -146,8 +146,8 @@ FileHandler3D::ReadMetaFile()
   vector<vector<double>> parameters;
 
   int target_index = 0;
-  for(int i=0; i<INT_MAX; ++i) {
-    getline(input, line);
+  int index = 0;
+  while(getline(input, line)) {
     std::istringstream is(line);
     string directory, mesh, soln;
 
@@ -163,7 +163,7 @@ FileHandler3D::ReadMetaFile()
          soln.compare(0, 4, "Target", 0, 4) and
          soln.compare(0, 4, "TARGET", 0, 4) and
 	 soln.compare(0, 4, "target", 0, 4))) {
-      target_index = i;
+      target_index = index;
     }
 
     // read parameters
@@ -171,12 +171,12 @@ FileHandler3D::ReadMetaFile()
     vector<double> data;
     while(is >> value) data.push_back(value);
 
-    if(is.fail()) break;
-
     // contains target as well
     parameters.push_back(data);
     surf_files.push_back(directory + mesh);
     soln_files.push_back(directory + soln);
+
+    index++;
   }
 
   if(!target_index) {
@@ -221,10 +221,10 @@ FileHandler3D::ReadMetaFile()
   surface_files.resize(iod_meta.numPoints, "");
   solution_files.resize(iod_meta.numPoints, "");
 
-  int index = 0;
+  index = 0;
   for(int i=0; i<iod_meta.numPoints+1; ++i) {
 
-    if(i == target_index) continue;
+    if(dist2target[i].first == 0) continue; // skip target
 
     associates[index]     = parameters[dist2target[i].second];
     surface_files[index]  = surf_files[dist2target[i].second];
@@ -238,7 +238,7 @@ FileHandler3D::ReadMetaFile()
     print("- Interpolating from parameters:\n");
     for(int i=0; i<iod_meta.numPoints; ++i) {
       print("  o Parameter %d:", i);
-      for(int j=0; j<(int)associates.size(); ++j)
+      for(int j=0; j<(int)associates[i].size(); ++j)
         print("  %e", associates[i][j]);
       print("\n");
     }

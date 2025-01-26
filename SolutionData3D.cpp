@@ -1,5 +1,4 @@
 #include<SolutionData3D.h>
-#include<iterator>
 
 //------------------------------------------------------------
 
@@ -59,12 +58,13 @@ std::array<double,2>
 SolutionData3D::GetTimeBracket(double time)
 {
 
-  auto upp = data_ptr->lower_bound(time);
-  auto low = std::prev(upp);
+  assert(data_ptr); // should not be null
+  auto range = data_ptr->equal_range(time);
 
-  double t0 = low->first;
-  double t1 = upp->first;
+  double t0 = range.first->first;
+  double t1 = range.first->first;
 
+  auto tbounds = GetTimeBounds();
   return std::array<double,2>{t0, t1};
 
 }
@@ -108,6 +108,9 @@ SolutionData3D::Flatten(std::vector<double> &flat)
   int index = 0;
   for(const auto& [time, data] : *data_ptr) {
 
+    // might not be needed.
+    assert(index < container_size);
+
     // store time stamp
     flat[index] = time;
     index++;
@@ -121,7 +124,8 @@ SolutionData3D::Flatten(std::vector<double> &flat)
       index += 3;
     }
 
-    assert(index < container_size);
+    //fprintf(stdout, "time = %e, soln size = %d, stamps = %d  ", time, (int)data.size(), num_stamps);
+    //fprintf(stdout, "index: %d, rows: %d, size: %d.\n", index, GetRows(), container_size);
 
   }
 
@@ -143,7 +147,7 @@ SolutionData3D::Rebuild(const std::vector<double> &other, int rows)
   for(int i=0; i<size; ++i) {
 
     double time;
-    std::vector<Vec3D> data;
+    std::vector<Vec3D> data(rows, Vec3D(0.0));
 
     time = other[i];
     i++;

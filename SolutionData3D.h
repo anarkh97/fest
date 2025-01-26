@@ -37,7 +37,7 @@ public:
 
   
   bool Empty() const { return data_ptr->empty(); }
-  int GetSize() const { return num_stamps + 3*num_data_rows; }
+  int GetSize() const { return (3*num_data_rows + 1)*num_stamps; }
   int GetRows() const { return num_data_rows; }
 
   std::array<double,2> GetTimeBounds();
