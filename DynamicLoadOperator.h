@@ -53,9 +53,9 @@ public:
 protected:
 
   // Interpolation methods
-  virtual void InterpolateInMetaSpace(TriangulatedSurface &surface, std::vector<Vec3D> &force, 
-                                      std::vector<Vec3D> *force_over_area, double t);
-  virtual void InterpolationInSpace();
+  virtual void InterpolateInMetaSpace(TriangulatedSurface &surface, std::vector<std::vector<Vec3D>> &solutions, 
+                                      std::vector<Vec3D> &force, std::vector<Vec3D> *force_over_area); 
+  virtual void InterpolateInSpace(std::vector<Vec3D>& X, int active_nodes, int dim, double* output);
   virtual void InterpolateInTime(double t1, double* input1, double t2, double* input2,
                                  double t, double* output, int size);
 

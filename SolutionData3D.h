@@ -5,6 +5,7 @@
 #include<Vector3D.h>
 #include<map>
 #include<vector>
+#include<array>
 #include<memory>
 #include<utility>
 #include<cassert>
@@ -39,10 +40,10 @@ public:
   int GetSize() const { return num_stamps + 3*num_data_rows; }
   int GetRows() const { return num_data_rows; }
 
-  std::map<double, std::vector<Vec3D>> &GetMap() const { return *data_ptr; }
+  std::array<double,2> GetTimeBounds();
+  std::array<double,2> GetTimeBracket(double t);
 
-  std::vector<Vec3D> &Find(double time);
-  std::vector<Vec3D>  Find(double time) const;
+  std::vector<Vec3D>& GetSolutionAtTime(double t);
 
   void MoveMap(std::map<double, std::vector<Vec3D>> &&);
   void Insert(double time, std::vector<Vec3D> &&);

@@ -42,6 +42,13 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
 
   assert(active_nodes == (int)surface.X.size()); // cracking not supported
 
+  // clear old force values
+  for(int i=0; i<active_nodes; ++i) {
+    force[i] = Vec3D(0.);
+    if(force_over_area)
+      (*force_over_area)[i] = Vec3D(0.0);
+  }
+
   int mpi_rank, mpi_size;
   MPI_Comm_rank(comm, &mpi_rank);
   MPI_Comm_size(comm, &mpi_size);
@@ -66,10 +73,6 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
 
   int my_node_size = counts[mpi_rank];
   int my_start_index = start_index[mpi_rank];
-
-  // clear old force values
-  for(int index=my_start_index; index<my_node_size; ++index) 
-    force[index] = Vec3D(0.);
 
   // compute forces
   Vec3D normalz(0.0, 0.0, 1.0);
@@ -96,6 +99,9 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
   }
   MPI_Allgatherv(MPI_IN_PLACE, 3*my_node_size, MPI_DOUBLE, (double*)force.data(), 
                  counts.data(), start_index.data(), MPI_DOUBLE, comm);
+  if(force_over_area)
+    MPI_Allgatherv(MPI_IN_PLACE, 3*my_node_size, MPI_DOUBLE, (double*)force_over_area->data(), 
+                   counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
 }
 

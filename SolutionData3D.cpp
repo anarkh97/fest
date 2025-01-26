@@ -1,4 +1,5 @@
 #include<SolutionData3D.h>
+#include<iterator>
 
 //------------------------------------------------------------
 
@@ -42,23 +43,29 @@ SolutionData3D::MoveMap(std::map<double, std::vector<Vec3D>> &&input_map)
 
 //------------------------------------------------------------
 
-std::vector<Vec3D>&
-SolutionData3D::Find(double time)
+std::array<double,2>
+SolutionData3D::GetTimeBounds()
 {
 
-  assert(!Empty()); // should not be empty
-  return data_ptr->at(time); // will throw an error if time is not found.
+  double tmin = data_ptr->begin()->first;
+  double tmax = data_ptr->rbegin()->first;
+  return std::array<double,2>{tmin, tmax};
 
 }
 
 //------------------------------------------------------------
 
-std::vector<Vec3D>
-SolutionData3D::Find(double time) const
+std::array<double,2>
+SolutionData3D::GetTimeBracket(double time)
 {
 
-  assert(!Empty()); // should not be empty
-  return data_ptr->at(time); // will throw an error if time is not found.
+  auto upp = data_ptr->lower_bound(time);
+  auto low = std::prev(upp);
+
+  double t0 = low->first;
+  double t1 = upp->first;
+
+  return std::array<double,2>{t0, t1};
 
 }
 
@@ -72,6 +79,15 @@ SolutionData3D::Insert(double time, std::vector<Vec3D> &&data)
   num_stamps        = data_ptr->size();
   num_data_rows     = data_ptr->begin()->second.size();
 
+}
+
+//------------------------------------------------------------
+
+std::vector<Vec3D>&
+SolutionData3D::GetSolutionAtTime(double t)
+{
+  assert(data_ptr); // should not be null
+  return data_ptr->at(t); // will throw an error if not found.
 }
 
 //------------------------------------------------------------

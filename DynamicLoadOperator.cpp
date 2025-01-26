@@ -89,8 +89,8 @@ void DynamicLoadOperator::LoadExistingSolutions()
 //------------------------------------------------------------
 
 void
-DynamicLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<Vec3D> &force, 
-                                             vector<Vec3D> *force_over_area, double t)
+DynamicLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
+                                            vector<Vec3D> &force, vector<Vec3D> *force_over_area)
 {
   // default is to do nothing.
 }
@@ -98,7 +98,7 @@ DynamicLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector
 //------------------------------------------------------------
 
 void
-DynamicLoadOperator::InterpolationInSpace()
+DynamicLoadOperator::InterpolateInSpace(std::vector<Vec3D>& X, int active_nodes, int dim, double* output)
 {
   // default is to do nothing.
 }

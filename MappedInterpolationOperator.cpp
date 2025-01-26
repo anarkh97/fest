@@ -23,9 +23,29 @@ MappedInterpolationOperator::ComputeForces(TriangulatedSurface& surface, vector<
 
 //------------------------------------------------------------------------------------------------
 
+void
+MappedInterpolationOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
+                                                    vector<Vec3D> &force, vector<Vec3D> *force_over_area)
+{
+  //
+}
 
 //------------------------------------------------------------------------------------------------
 
+void
+MappedInterpolationOperator::InterpolateInSpace(std::vector<Vec3D>& X, int active_nodes, int dim, double* output)
+{
+  //
+}
+
+//------------------------------------------------------------------------------------------------
+
+void
+MappedInterpolationOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
+                                               double t, double* output, int size)
+{
+  //
+}
 
 //------------------------------------------------------------------------------------------------
 
