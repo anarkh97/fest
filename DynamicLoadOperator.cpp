@@ -18,6 +18,7 @@ DynamicLoadOperator::DynamicLoadOperator(IoData &iod_, MPI_Comm &comm_)
   int num_points = iod_meta.numPoints;
   // resize solution container
   proxi_solutions.resize(num_points, NULL);
+  proxi_surfaces.resize(num_points, NULL);
 
 }
 

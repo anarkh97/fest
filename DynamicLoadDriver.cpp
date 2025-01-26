@@ -38,8 +38,10 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
 
 void DynamicLoadDriver::Destroy()
 {
-  if(dlo)
+  if(dlo) {
     dlo->Destroy();
+    delete dlo;
+  }
 }
 
 //------------------------------------------------------------
