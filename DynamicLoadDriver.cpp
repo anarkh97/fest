@@ -28,16 +28,23 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
       dlo = new ConstantLoadOperator(iod, comm);
       break;
     }
-    case DynamicLoadCalculatorData::CLOSEST : {
-      dlo = new ClosestPointLoadOperator(iod, comm);
+    case DynamicLoadCalculatorData::CLOSEST_STATIC : {
+      dlo = new ClosestConsistentNodesOperator(iod, comm);
       break;
     }
-    case DynamicLoadCalculatorData::MATCHED : {
-      dlo = new SimpleInterpolationOperator(iod, comm);
+    case DynamicLoadCalculatorData::CLOSEST_MAPPED : {
+      //dlo = new ClosestConsistentNodesOperator(iod, comm);
+      print_error("*** Error: Dynamic load calculator based on closest point solution "
+                  "node-to-node mapping has not been implemented yet.\n");
+      exit_mpi();
       break;
     }
-    case DynamicLoadCalculatorData::INTERPOLATED : {
-      dlo = new MappedInterpolationOperator(iod, comm);
+    case DynamicLoadCalculatorData::INTERP_STATIC : {
+      dlo = new InterpolationConsistentNodesOperator(iod, comm);
+      break;
+    }
+    case DynamicLoadCalculatorData::INTERP_MAPPED : {
+      dlo = new InterpolationMappedNodesOperator(iod, comm);
       break;
     }
     case DynamicLoadCalculatorData::NONE : {

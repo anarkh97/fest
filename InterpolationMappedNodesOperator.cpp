@@ -1,4 +1,4 @@
-#include<MappedInterpolationOperator.h>
+#include<InterpolationMappedNodesOperator.h>
 
 using std::vector;
 
@@ -6,8 +6,8 @@ extern int verbose;
 
 //------------------------------------------------------------------------------------------------
 
-MappedInterpolationOperator::MappedInterpolationOperator(IoData& iod_, MPI_Comm& comm_)
-                           : DynamicLoadOperator(iod_, comm_)
+InterpolationMappedNodesOperator::InterpolationMappedNodesOperator(IoData& iod_, MPI_Comm& comm_)
+                                : DynamicLoadOperator(iod_, comm_)
 {
 
 }
@@ -15,8 +15,8 @@ MappedInterpolationOperator::MappedInterpolationOperator(IoData& iod_, MPI_Comm&
 //------------------------------------------------------------------------------------------------
 
 void
-MappedInterpolationOperator::ComputeForces(TriangulatedSurface& surface, vector<Vec3D>& force,
-                                           vector<Vec3D>* force_over_area, double t)
+InterpolationMappedNodesOperator::ComputeForces(TriangulatedSurface& surface, vector<Vec3D>& force,
+                                                vector<Vec3D>* force_over_area, double t)
 {
 
 }
@@ -24,16 +24,8 @@ MappedInterpolationOperator::ComputeForces(TriangulatedSurface& surface, vector<
 //------------------------------------------------------------------------------------------------
 
 void
-MappedInterpolationOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
-                                                    vector<Vec3D> &force, vector<Vec3D> *force_over_area)
-{
-  //
-}
-
-//------------------------------------------------------------------------------------------------
-
-void
-MappedInterpolationOperator::InterpolateInSpace(std::vector<Vec3D>& X, int active_nodes, int dim, double* output)
+InterpolationMappedNodesOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
+                                                         vector<Vec3D> &force, vector<Vec3D> *force_over_area)
 {
   //
 }
@@ -41,8 +33,16 @@ MappedInterpolationOperator::InterpolateInSpace(std::vector<Vec3D>& X, int activ
 //------------------------------------------------------------------------------------------------
 
 void
-MappedInterpolationOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
-                                               double t, double* output, int size)
+InterpolationMappedNodesOperator::InterpolateInSpace(std::vector<Vec3D>& X, int active_nodes, int dim, double* output)
+{
+  //
+}
+
+//------------------------------------------------------------------------------------------------
+
+void
+InterpolationMappedNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
+                                                    double t, double* output, int size)
 {
   //
 }
@@ -50,7 +50,7 @@ MappedInterpolationOperator::InterpolateInTime(double t1, double* input1, double
 //------------------------------------------------------------------------------------------------
 
 //! Code re-used from M2C's DynamicLoadCalculator::BuildKDTree
-void MappedInterpolationOperator::BuildKDTree(vector<Vec3D> &Xs, K3DTree* tree, vector<PointIn3D> &p)
+void InterpolationMappedNodesOperator::BuildKDTree(vector<Vec3D> &Xs, K3DTree* tree, vector<PointIn3D> &p)
 {
 
   if(tree)
@@ -69,7 +69,7 @@ void MappedInterpolationOperator::BuildKDTree(vector<Vec3D> &Xs, K3DTree* tree, 
 //------------------------------------------------------------------------------------------------
 
 void
-MappedInterpolationOperator::BuildSurfacesToSurfaceMap(TriangulatedSurface &surface)
+InterpolationMappedNodesOperator::BuildSurfacesToSurfaceMap(TriangulatedSurface &surface)
 {
 
 /* AN: Code is incomplete...	

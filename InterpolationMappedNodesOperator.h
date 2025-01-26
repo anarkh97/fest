@@ -1,5 +1,5 @@
-#ifndef _MAPPED_INTERPOLATION_OPERATOR_H_
-#define _MAPPED_INTERPOLATION_OPERATOR_H_
+#ifndef _INTERPOLATION_MAPPED_NODES_OPERATOR_H_
+#define _INTERPOLATION_MAPPED_NODES_OPERATOR_H_
 
 #include<DynamicLoadOperator.h>
 #include<Vector3D.h>
@@ -7,7 +7,7 @@
 
 typedef KDTree<PointIn3D,3> K3DTree;
 
-class MappedInterpolationOperator : public DynamicLoadOperator {
+class InterpolationMappedNodesOperator : public DynamicLoadOperator {
 
   //! Maps target surface nodes to nodes from other surfaces
   //! that are provided in the metafile.
@@ -20,8 +20,8 @@ class MappedInterpolationOperator : public DynamicLoadOperator {
 
 public:
 
-  MappedInterpolationOperator(IoData& iod_, MPI_Comm& comm_);
-  ~MappedInterpolationOperator() { }
+  InterpolationMappedNodesOperator(IoData& iod_, MPI_Comm& comm_);
+  ~InterpolationMappedNodesOperator() { }
 
   void ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D>& force,
                      std::vector<Vec3D>* force_over_area, double t) override;

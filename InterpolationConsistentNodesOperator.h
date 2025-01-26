@@ -1,10 +1,10 @@
-#ifndef _SIMPLE_INTERPOLATION_OPERATOR_H_
-#define _SIMPLE_INTERPOLATION_OPERATOR_H_
+#ifndef _INTERPOLATION_CONSISTENT_NODES_OPERATOR_H_
+#define _INTERPOLATION_CONSISTENT_NODES_OPERATOR_H_
 
 #include<DynamicLoadOperator.h>
 
 /**********************************************
- * class SimpleInterpolationOperator interpolates
+ * class InterpolationConsistentNodesOperator interpolates
  * the interface forces from existing FSI 
  * simulations to compute the forces on the 
  * current (or target) surface. The surfaces
@@ -13,12 +13,12 @@
  *********************************************/
 
 //! Simple interpolation operator 
-class SimpleInterpolationOperator : public DynamicLoadOperator {
+class InterpolationConsistentNodesOperator : public DynamicLoadOperator {
 
 public:
 
-  SimpleInterpolationOperator(IoData& iod_, MPI_Comm& comm_);
-  ~SimpleInterpolationOperator() { }
+  InterpolationConsistentNodesOperator(IoData& iod_, MPI_Comm& comm_);
+  ~InterpolationConsistentNodesOperator() { }
 
   void LoadExistingSurfaces() override;
 

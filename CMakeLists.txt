@@ -78,9 +78,9 @@ SolutionData3D.cpp
 FileHandler3D.cpp
 DynamicLoadOperator.cpp
 ConstantLoadOperator.cpp
-ClosestPointLoadOperator.cpp
-SimpleInterpolationOperator.cpp
-MappedInterpolationOperator.cpp
+ClosestConsistentNodesOperator.cpp
+InterpolationConsistentNodesOperator.cpp
+InterpolationMappedNodesOperator.cpp
 DynamicLoadDriver.cpp
 LagrangianOutput.cpp
 Utils.cpp

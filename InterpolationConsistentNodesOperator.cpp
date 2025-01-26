@@ -1,4 +1,4 @@
-#include<SimpleInterpolationOperator.h>
+#include<InterpolationConsistentNodesOperator.h>
 #include<MathTools/rbf_interp.hpp>
 
 using std::vector;
@@ -7,7 +7,7 @@ extern int verbose;
 
 //------------------------------------------------------------
 
-SimpleInterpolationOperator::SimpleInterpolationOperator(IoData &iod_, MPI_Comm &comm_)
+InterpolationConsistentNodesOperator::InterpolationConsistentNodesOperator(IoData &iod_, MPI_Comm &comm_)
                            : DynamicLoadOperator(iod_, comm_)
 {
   //
@@ -15,7 +15,7 @@ SimpleInterpolationOperator::SimpleInterpolationOperator(IoData &iod_, MPI_Comm 
 
 //------------------------------------------------------------
 
-void SimpleInterpolationOperator::LoadExistingSurfaces()
+void InterpolationConsistentNodesOperator::LoadExistingSurfaces()
 {
   // we do not need other surfaces as one-to-one mapping is
   // assumed.
@@ -24,7 +24,7 @@ void SimpleInterpolationOperator::LoadExistingSurfaces()
 //------------------------------------------------------------
 
 void
-SimpleInterpolationOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
+InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
                                            std::vector<Vec3D> *force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
@@ -73,13 +73,13 @@ SimpleInterpolationOperator::ComputeForces(TriangulatedSurface& surface, std::ve
 
     if((int)Sk.size() != active_nodes) {
       print_error("*** Error: The number of nodes for point %d at time (t = %e) "
-                  "does not match the number of nodes does not match the target surface.\n",
+                  "does not match the number of nodes on the target surface.\n",
 		  i+1, tk);
       exit_mpi();
     }
     if((int)Skp.size() != active_nodes) {
       print_error("*** Error: The number of nodes for point %d at time (t = %e) "
-                  "does not match the number of nodes does not match the target surface.\n",
+                  "does not match the number of nodes on the target surface.\n",
 		  i+1, tkp);
       exit_mpi();
     }
@@ -97,7 +97,7 @@ SimpleInterpolationOperator::ComputeForces(TriangulatedSurface& surface, std::ve
 //------------------------------------------------------------
 
 void 
-SimpleInterpolationOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
+InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
                                                     vector<Vec3D> &force, vector<Vec3D> *force_over_area) 
 {
 
@@ -157,45 +157,45 @@ SimpleInterpolationOperator::InterpolateInMetaSpace(TriangulatedSurface &surface
   // compute forces
   for(int index=my_start_index; index<my_block_size; ++index) {
 
-     // elements attached to this node
-     auto elems = surface.node2elem[index];
+    // elements attached to this node
+    auto elems = surface.node2elem[index];
 
-     double area;
-     Vec3D  normal;
+    double area;
+    Vec3D  normal;
 
-     for(auto it=elems.begin(); it!=elems.end(); ++it) {
-       area   += surface.elemArea[*it]/3;
-       normal += surface.elemArea[*it]*surface.elemNorm[*it]; // area weighted
-     }
+    for(auto it=elems.begin(); it!=elems.end(); ++it) {
+      area   += surface.elemArea[*it]/3;
+      normal += surface.elemArea[*it]*surface.elemNorm[*it]; // area weighted
+    }
 
-     normal = normal/(3*area);
+    normal = normal/(3*area);
 
-     // prepare for interpolation
-     double xd[var_dim*num_points];
-     for(int i=0; i<num_points; ++i)
-       for(int j=0; j<var_dim; ++j)
-         xd[var_dim*i + j] = prox[i][j];
+    // prepare for interpolation
+    double xd[var_dim*num_points];
+    for(int i=0; i<num_points; ++i)
+      for(int j=0; j<var_dim; ++j)
+        xd[var_dim*i + j] = prox[i][j];
 
 
-     double r0; //smaller than maximum separation, larger than typical separation
-     r0 = rmin + rmax;
+    double r0; //smaller than maximum separation, larger than typical separation
+    r0 = rmin + rmax;
 
-     double fd[num_points];
+    double fd[num_points];
 
-     //interpolate
-     for(int i=0; i<num_points; ++i)
-       fd[i] = solutions[i][index].norm();
+    //interpolate
+    for(int i=0; i<num_points; ++i)
+      fd[i] = solutions[i][index].norm();
 
-     vector<double> weight;
-     vector<double> interp;
+    vector<double> weight;
+    vector<double> interp;
 
-     MathTools::rbf_weight(var_dim, num_points, xd, r0, phi, fd, weight.data());
-     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
-                           targ.data(), interp.data());
+    MathTools::rbf_weight(var_dim, num_points, xd, r0, phi, fd, weight.data());
+    MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
+                          targ.data(), interp.data());
 
-     force[index] = interp[0]*normal;   
-     if(force_over_area)
-       (*force_over_area)[index] = interp[0];
+    force[index] = interp[0]*normal;   
+    if(force_over_area)
+      (*force_over_area)[index] = interp[0];
 
   }	  
 
@@ -217,7 +217,7 @@ SimpleInterpolationOperator::InterpolateInMetaSpace(TriangulatedSurface &surface
 
 //! Copied from DynamicLoadCalculator::InterpolateInTime
 void
-SimpleInterpolationOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
+InterpolationConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
                                                double t, double* output, int size)
 {
   assert(t2>t1);
