@@ -19,7 +19,7 @@ int main(int argc, char* argv[])
 
   //! Read user's input file (read the parameters)
   IoData iod(argc, argv);
-  verbose = iod.interp_driver.verbose;
+  verbose = iod.calculator.verbose;
 
   //! Partition MPI, if there are concurrent programs
   MPI_Comm comm; //this is going to be the FEST communicator
@@ -30,11 +30,17 @@ int main(int argc, char* argv[])
   iod.finalize();
 
   //! Special tool for nearest neighbor pressure interpolations.
-  DynamicLoadDriver load_driver(iod, comm, concurrent);
-  MPI_Barrier(fest_comm); 
+  DynamicLoadDriver driver(iod, comm, concurrent);
+
+  //! Run time integration. 
+  //! Note that FEST does not perform time integration, strictly
+  //! speaking. Instead, it will compute fluid-structure interface forces 
+  //! based on existing FSI simulation provided by the user.
+  driver.Run();
+  //MPI_Barrier(fest_comm); 
 
   //! finalize 
-  load_driver.Destroy();
+  driver.Destroy();
   concurrent.Destroy();
   MPI_Finalize();
   

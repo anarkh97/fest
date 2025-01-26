@@ -215,10 +215,7 @@ void MetaInputData::setup(const char *name, ClassAssigner *father)
 
 SpatialInterpolationData::SpatialInterpolationData()
 {
-  basis = INVERSE_MULTIQUADRIC;
-  numPoints = 8;
-
-  projection = XXX;
+  //
 }
 
 //------------------------------------------------------------------------------
@@ -226,42 +223,38 @@ SpatialInterpolationData::SpatialInterpolationData()
 void SpatialInterpolationData::setup(const char *name, ClassAssigner *father)
 {
 
-  ClassAssigner *ca = new ClassAssigner(name, 3, father);
-  
-  new ClassToken<SpatialInterpolationData> (ca, "SpatialInterpolationBasis", this,
-     reinterpret_cast<int SpatialInterpolationData::*>(&SpatialInterpolationData::basis), 4,
-     "Multiquadric", 0, "InverseMultiquadric", 1, "ThinPlateSpline", 2, "Gaussian", 3);
-
-  new ClassInt<SpatialInterpolationData>(ca, "NumberOfBasisPoints", this, 
-      &SpatialInterpolationData::numPoints);
-
-  new ClassToken<SpatialInterpolationData> (ca, "ProjectionType", this,
-     reinterpret_cast<int SpatialInterpolationData::*>(&SpatialInterpolationData::projection), 3,
-     "XXX", 0, "YYY", 1);
+  //ClassAssigner *ca = new ClassAssigner(name, 1, father);
+  //
+  //new ClassToken<SpatialInterpolationData> (ca, "ProjectionType", this,
+  //   reinterpret_cast<int SpatialInterpolationData::*>(&SpatialInterpolationData::projection), 2,
+  //   "Matched", 0, "Interpolate", 1);
 
 }
 
 //------------------------------------------------------------------------------
 
-InterpolationDriverData::InterpolationDriverData()
+DynamicLoadCalculatorData::DynamicLoadCalculatorData()
 {
-  //type = NONE;
-  verbose = LOW;
+  type     = NONE;
+  verbose  = LOW;
+  pressure = 1e5;
 }
 
 //------------------------------------------------------------------------------
 
-void InterpolationDriverData::setup(const char *name, ClassAssigner *father)
+void DynamicLoadCalculatorData::setup(const char *name, ClassAssigner *father)
 {
-  ClassAssigner *ca = new ClassAssigner(name, 3, father);
+  ClassAssigner *ca = new ClassAssigner(name, 5, father);
 
-  //new ClassToken<InterpolationDriverData> (ca, "Type", this,
-  //   reinterpret_cast<int InterpolationDriverData::*>(&InterpolationDriverData::type), 3,
-  //   "None", 0, "DynamicLoadCalculation", 1, "EquationOfStateTabulation", 2);
+  new ClassToken<DynamicLoadCalculatorData> (ca, "Type", this,
+     reinterpret_cast<int DynamicLoadCalculatorData::*>(&DynamicLoadCalculatorData::type), 5,
+     "None", 0, "Constant", 1, "Closest", 2, "Matched", 3, "Interpolated", 4);
 
-  new ClassToken<InterpolationDriverData>(ca, "VerboseScreenOutput", this,
-      reinterpret_cast<int InterpolationDriverData::*>(&InterpolationDriverData::verbose), 3,
+  new ClassToken<DynamicLoadCalculatorData>(ca, "VerboseScreenOutput", this,
+      reinterpret_cast<int DynamicLoadCalculatorData::*>(&DynamicLoadCalculatorData::verbose), 3,
       "Low", 0, "Medium", 1, "High", 2);
+
+  new ClassDouble<DynamicLoadCalculatorData>(ca, "Pressure", this, &DynamicLoadCalculatorData::pressure);
 
   meta_input.setup("MetaInputData");
   spatial_interp.setup("SpatialInterpolationData");
@@ -326,7 +319,7 @@ void IoData::setupCmdFileVariables()
 {
 
   concurrent.setup("ConcurrentPrograms");
-  interp_driver.setup("InterpolationDriver");
+  calculator.setup("DynamicsCalculator");
   output.setup("Output");
 
 }

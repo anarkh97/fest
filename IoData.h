@@ -169,20 +169,9 @@ struct MetaInputData {
 
 //! This data structure contains user inputs for spacial reconstruction of 
 //! fluid-structure interface pressure based on exisiting FSI simulations.
-//! Radial basis interpolations are used for the reconstructions, whose basis 
-//! functions can be different from the meta-level basis functions. The data
-//! structure also contains user input for projecting existing FSI simulation
-//! wetted surfaces onto the current fluid-structure interface 
-//! (or wetted surface).
+//! Barycentric/radial basis interpolations are used for the reconstruction. 
+//! Currently, not implemented.
 struct SpatialInterpolationData {
-
-  // radial basis inputs.
-  enum BasisFunction {MULTIQUADRIC = 0, INVERSE_MULTIQUADRIC = 1,
-                      THIN_PLATE_SPLINE = 2, GAUSSIAN = 3, SIZE = 4} basis; //basis function for interpolation
-  int numPoints; //number of points for (unstructured) interpolation
-
-  // mapping (or projection) inputs.
-  enum ProjectionType {XXX = 0, YYY = 1} projection;
 
   SpatialInterpolationData();
   ~SpatialInterpolationData() {}
@@ -193,20 +182,21 @@ struct SpatialInterpolationData {
 
 //------------------------------------------------------------------------------
 
-struct InterpolationDriverData {
+struct DynamicLoadCalculatorData {
 
-  // AN: could be repurposed later.
-  //enum Type {NONE = 0, DYNAMIC_LOAD_CALCULATION = 1, EOS_TABULATION = 2, SIZE = 3} type;
+  enum Type {NONE = 0, CONSTANT = 1, CLOSEST = 2, MATCHED = 3, INTERPOLATED = 4} type;
   
   enum VerbosityLevel {LOW = 0, MEDIUM = 1, HIGH = 2} verbose;
 
+  double pressure;
   MetaInputData meta_input;
   SpatialInterpolationData spatial_interp;
 
-  InterpolationDriverData();
-  ~InterpolationDriverData() {}
+  DynamicLoadCalculatorData();
+  ~DynamicLoadCalculatorData() {}
 
   void setup(const char *, ClassAssigner * = 0);
+
 };
 
 //------------------------------------------------------------------------------
@@ -220,7 +210,7 @@ public:
 
   ConcurrentProgramsData concurrent;
 
-  InterpolationDriverData interp_driver;
+  DynamicLoadCalculatorData calculator;
 
   LagrangianMeshOutputData output;
 

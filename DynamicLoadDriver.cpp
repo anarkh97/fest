@@ -27,12 +27,6 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
 #else
   dlo = new SimpleInterpolationOperator(iod, comm);
 #endif
-
-  // Run time integration. 
-  // Note that FEST does not perform time integration, strictly
-  // speaking. Instead, it will compute fluid-structure interface forces 
-  // based on existing FSI simulation provided by the user.
-  Run();
 }
 
 //------------------------------------------------------------
