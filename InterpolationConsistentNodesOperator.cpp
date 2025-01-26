@@ -8,7 +8,7 @@ extern int verbose;
 //------------------------------------------------------------
 
 InterpolationConsistentNodesOperator::InterpolationConsistentNodesOperator(IoData &iod_, MPI_Comm &comm_)
-                           : DynamicLoadOperator(iod_, comm_)
+                                    : DynamicLoadOperator(iod_, comm_)
 {
   //
 }
@@ -25,7 +25,7 @@ void InterpolationConsistentNodesOperator::LoadExistingSurfaces()
 
 void
 InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                           std::vector<Vec3D> *force_over_area, double t)
+                                                    std::vector<Vec3D> *force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
   int active_nodes = surface.active_nodes;
@@ -98,7 +98,7 @@ InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface
 
 void 
 InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
-                                                    vector<Vec3D> &force, vector<Vec3D> *force_over_area) 
+                                                             vector<Vec3D> &force, vector<Vec3D> *force_over_area) 
 {
 
   int active_nodes = surface.active_nodes;
@@ -218,7 +218,7 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
 //! Copied from DynamicLoadCalculator::InterpolateInTime
 void
 InterpolationConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
-                                               double t, double* output, int size)
+                                                        double t, double* output, int size)
 {
   assert(t2>t1);
   double c1 = (t2-t)/(t2-t1);
