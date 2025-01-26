@@ -1,5 +1,5 @@
-#ifndef _DYNAMIC_LOAD_ESTIMATOR_H_
-#define _DYNAMIC_LOAD_ESTIMATOR_H_
+#ifndef _DYNAMIC_LOAD_OPERATOR_H_
+#define _DYNAMIC_LOAD_OPERATOR_H_
 
 #include<IoData.h>
 #include<Vector3D.h>

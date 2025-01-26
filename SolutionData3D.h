@@ -1,5 +1,5 @@
-#ifndef _SOLUTION_DATA_H_
-#define _SOLUTION_DATA_H_
+#ifndef _SOLUTION_DATA_3D_H_
+#define _SOLUTION_DATA_3D_H_
 
 #include<Utils.h>
 #include<Vector3D.h>

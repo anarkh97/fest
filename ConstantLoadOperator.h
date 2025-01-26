@@ -1,5 +1,5 @@
-#ifndef _CONSTANT_LOAD_OPERATOR_
-#define _CONSTANT_LOAD_OPERATOR_ 
+#ifndef _CONSTANT_LOAD_OPERATOR_H_
+#define _CONSTANT_LOAD_OPERATOR_H_ 
 
 #include<DynamicLoadOperator.h>
 

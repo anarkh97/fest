@@ -1,5 +1,5 @@
-#ifndef _INTERPOLATION_LOAD_DRIVER_
-#define _INTERPOLATION_LOAD_DRIVER_
+#ifndef _DYNAMIC_LOAD_DRIVER_H_
+#define _DYNAMIC_LOAD_DRIVER_H_
   
 #include<IoData.h>
 #include<ConcurrentProgramsHandler.h>
@@ -22,7 +22,7 @@
  * fluid-structure interaction simulation.
  *********************************************/
 
-//! Interpolation load driver
+//! Dynamic load driver
 class DynamicLoadDriver {
 
   MPI_Comm& comm;

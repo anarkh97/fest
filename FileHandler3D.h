@@ -1,5 +1,5 @@
-#ifndef _SOLUTION_READER_H_
-#define _SOLUTION_READER_H_
+#ifndef _FILE_HANDLER_3D_
+#define _FILE_HANDLER_3D_
 
 #include<IoData.h>
 #include<Vector3D.h>
