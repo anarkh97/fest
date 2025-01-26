@@ -6,7 +6,9 @@
 #include<TriangulatedSurface.h>
 #include<DynamicLoadOperator.h>
 #include<ConstantLoadOperator.h>
+#include<ClosestPointLoadOperator.h>
 #include<SimpleInterpolationOperator.h>
+#include<MappedInterpolationOperator.h>
 #include<LagrangianOutput.h>
 #include<Vector3D.h>
 #include<vector>

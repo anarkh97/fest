@@ -78,6 +78,7 @@ SolutionData3D.cpp
 FileHandler3D.cpp
 DynamicLoadOperator.cpp
 ConstantLoadOperator.cpp
+ClosestPointLoadOperator.cpp
 SimpleInterpolationOperator.cpp
 MappedInterpolationOperator.cpp
 DynamicLoadDriver.cpp

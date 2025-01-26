@@ -22,11 +22,32 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
   }
 
   // Setup the interpolator.
-#ifdef DEBUG_CONNECTION // will be convertde to user option
-  dlo = new ConstantLoadOperator(iod, comm);
-#else
-  dlo = new SimpleInterpolationOperator(iod, comm);
-#endif
+  switch(iod.calculator.type) {
+
+    case DynamicLoadCalculatorData::CONSTANT : {
+      dlo = new ConstantLoadOperator(iod, comm);
+      break;
+    }
+    case DynamicLoadCalculatorData::CLOSEST : {
+      dlo = new ClosestPointLoadOperator(iod, comm);
+      break;
+    }
+    case DynamicLoadCalculatorData::MATCHED : {
+      dlo = new SimpleInterpolationOperator(iod, comm);
+      break;
+    }
+    case DynamicLoadCalculatorData::INTERPOLATED : {
+      dlo = new MappedInterpolationOperator(iod, comm);
+      break;
+    }
+    case DynamicLoadCalculatorData::NONE : {
+      print_warning("*** Warning: The Dynamic calculator type was not specified. "
+                    "Assuming constant pressure calculator.\n");
+      dlo = new ConstantLoadOperator(iod, comm);
+      break;
+    }
+
+  }
 }
 
 //------------------------------------------------------------
