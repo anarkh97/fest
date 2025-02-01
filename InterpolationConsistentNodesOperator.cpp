@@ -111,8 +111,8 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
   int var_dim = targ.size();
   double rmin = 0, rmax = 0;
   for(int i=0; i<var_dim; ++i) {
-    rmin += prox[           0][i]*prox[           0][i] - targ[i]*targ[i];
-    rmax += prox[num_points-1][i]*prox[num_points-1][i] - targ[i]*targ[i];
+    rmin += (prox[           0][i] - targ[i])*(prox[           0][i] - targ[i]);
+    rmax += (prox[num_points-1][i] - targ[i])*(prox[num_points-1][i] - targ[i]);
   }
 
   rmin = std::sqrt(rmin);
@@ -138,6 +138,8 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
 
   int my_block_size  = counts[mpi_rank];
   int my_start_index = start_index[mpi_rank];
+
+  //fprintf(stdout, "rank[%d] block_size %d, start_index %d.\n", mpi_rank, my_block_size, my_start_index);
 
   //choose a radial basis function for interpolation
   void (*phi)(int, double[], double, double[]); //a function pointer

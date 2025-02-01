@@ -208,7 +208,7 @@ FileHandler3D::ReadMetaFile()
  
     double dist = 0;
     for(int d=0; d<dim; ++d) 
-      dist += parameters[i][d]*parameters[i][d] - target[d]*target[d];
+      dist += (parameters[i][d] - target[d])*(parameters[i][d] - target[d]);
     
     dist2target.push_back(std::make_pair(dist, i));
 
@@ -222,6 +222,7 @@ FileHandler3D::ReadMetaFile()
   solution_files.resize(iod_meta.numPoints, "");
 
   index = 0;
+  std::vector<double> distances(iod_meta.numPoints, -1);
   for(int i=0; i<iod_meta.numPoints+1; ++i) {
 
     if(dist2target[i].first == 0) continue; // skip target
@@ -229,7 +230,7 @@ FileHandler3D::ReadMetaFile()
     associates[index]     = parameters[dist2target[i].second];
     surface_files[index]  = surf_files[dist2target[i].second];
     solution_files[index] = soln_files[dist2target[i].second];
-
+    distances[index]      = std::sqrt(dist2target[i].first); // mainly for log purpose.
     index++;
 
   }
@@ -240,7 +241,7 @@ FileHandler3D::ReadMetaFile()
       print("  o Parameter %d:", i);
       for(int j=0; j<(int)associates[i].size(); ++j)
         print("  %e", associates[i][j]);
-      print(" (%s)\n", solution_files[i].c_str());
+      print(" (r = %e)\n", distances[i]);
     }
     print("\n");
   }
