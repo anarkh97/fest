@@ -240,7 +240,7 @@ FileHandler3D::ReadMetaFile()
       print("  o Parameter %d:", i);
       for(int j=0; j<(int)associates[i].size(); ++j)
         print("  %e", associates[i][j]);
-      print("\n");
+      print(" (%s)\n", solution_files[i].c_str());
     }
     print("\n");
   }

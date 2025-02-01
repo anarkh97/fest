@@ -186,8 +186,8 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
     for(int i=0; i<num_points; ++i)
       fd[i] = solutions[i][index].norm();
 
-    vector<double> weight;
-    vector<double> interp;
+    vector<double> weight(num_points, -1.0);
+    vector<double> interp(num_points, -1.0);
 
     MathTools::rbf_weight(var_dim, num_points, xd, r0, phi, fd, weight.data());
     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
@@ -220,8 +220,9 @@ void
 InterpolationConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
                                                         double t, double* output, int size)
 {
-  assert(t2>t1);
-  double c1 = (t2-t)/(t2-t1);
+  assert(t2>=t1);
+
+  double c1 = (t2 == t1) ? 1.0 : (t2-t)/(t2-t1);
   double c2 = 1.0 - c1;
   for(int i=0; i<size; i++)
     output[i] = c1*input1[i] + c2*input2[i];

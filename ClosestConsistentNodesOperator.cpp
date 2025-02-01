@@ -103,9 +103,9 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
       area   += surface.elemArea[*it]/3;
 
     if(force_over_area) {
-      force_over_area[i][0] = force[i][0];
-      force_over_area[i][1] = force[i][1];
-      force_over_area[i][2] = force[i][2];
+      (*force_over_area)[i][0] = force[i][0];
+      (*force_over_area)[i][1] = force[i][1];
+      (*force_over_area)[i][2] = force[i][2];
     }
     force[i] *= area;
 
@@ -122,8 +122,9 @@ void
 ClosestConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
                                                double t, double* output, int size)
 {
-  assert(t2>t1);
-  double c1 = (t2-t)/(t2-t1);
+  assert(t2>=t1);
+
+  double c1 = (t2 == t1) ? 1.0 : (t2-t)/(t2-t1);
   double c2 = 1.0 - c1;
   for(int i=0; i<size; i++)
     output[i] = c1*input1[i] + c2*input2[i];
