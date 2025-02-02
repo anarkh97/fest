@@ -85,7 +85,7 @@ InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface
     }
 
     InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
-                      (double*)S.data(), S.size());
+                      (double*)S.data(), 3*active_nodes);
 
   }
 
@@ -195,9 +195,9 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
                           targ.data(), interp.data());
 
-    force[index] = interp[0]*normal;   
+    force[index] = interp[0]*area*normal;   
     if(force_over_area)
-      (*force_over_area)[index] = interp[0];
+      (*force_over_area)[index] = interp[0]*normal;
 
   }	  
 
@@ -222,9 +222,8 @@ void
 InterpolationConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
                                                         double t, double* output, int size)
 {
-  assert(t2>=t1);
-
-  double c1 = (t2 == t1) ? 1.0 : (t2-t)/(t2-t1);
+  assert(t2>t1);
+  double c1 = (t2-t)/(t2-t1);
   double c2 = 1.0 - c1;
   for(int i=0; i<size; i++)
     output[i] = c1*input1[i] + c2*input2[i];

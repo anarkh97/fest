@@ -592,7 +592,16 @@ FileHandler3D::ReadSolutionFile(string &filename, SolutionData3D &S)
   if(mpi_rank != 0)
     S.Rebuild(soln, soln_rows);
 
-  // probably not needed.
+  /*
+  if(mpi_rank == 0) {
+    auto &stored = S.GetSolutionAtTime(0.0);
+    for(auto &vec : stored) {
+      fprintf(stdout, "%e  %e  %e\n", vec[0], vec[1], vec[2]);
+    }
+    exit_mpi();
+  }
+  */
+
   MPI_Barrier(comm);
 
 }
@@ -623,15 +632,20 @@ FileHandler3D::ReadSolutionFileSingleProcessor(string &filename, SolutionData3D 
   while(getline(input, line)) {
 
     double time;
-    vector<Vec3D> data(num_nodes, Vec3D(0.0));
+    vector<Vec3D> snapshot(num_nodes, Vec3D(0.0));
 
     // read line
     std::istringstream is(line);
 
     // read time
-    is >> time;
+    if(!(is >> time)) {
+      fprintf(stderr, "\033[0;31m*** Error: Could not read a snapshot from the "
+                      "solution file (%s).\n\033[0m", filename.c_str());
+      exit(-1);
+    }
 
     // read data
+    bool ddone = false;
     for(int i=0; i<num_nodes; ++i) {
 
       // read the next line
@@ -639,23 +653,35 @@ FileHandler3D::ReadSolutionFileSingleProcessor(string &filename, SolutionData3D 
       is.clear();
       is.str(line);
 
+      bool done = false;
       double x, y, z;
-      is >> x >> y >> z;
-
-      if(is.fail()) {
-        fprintf(stderr, "\033[0;31m*** Error: Something went wrong while reading the "
-			"solution file (%s).\n\033[0;m", filename.c_str());
-	exit(-1);
+      if(!(is >> x >> y >> z)) {
+        done = true;
+        break;
       }
 
-      data[i] = Vec3D(x, y, z);
+      if(done) {
+        ddone = true;	      
+	break;
+      }
+
+      snapshot[i] = Vec3D(x, y, z);
 
     }
 
+    if(ddone) break;
+
     // grows the SolutionData3D object.
-    // Note: data is "moved" to an internal container.
+    // Note: snapshot is "moved" to an internal container.
     // It will no longer be available after this.
-    S.Insert(time, std::move(data));
+    S.Insert(time, std::move(snapshot));
+
+    /*
+    auto &stored = S.GetSolutionAtTime(time); 
+    for(auto &vec : stored)
+      fprintf(stdout, "%e  %e  %e\n", vec[0], vec[1], vec[2]);
+    exit(-1);
+    */
 
   }
 

@@ -1,4 +1,5 @@
 #include<SolutionData3D.h>
+#include<iterator>
 
 //------------------------------------------------------------
 
@@ -46,6 +47,7 @@ std::array<double,2>
 SolutionData3D::GetTimeBounds()
 {
 
+  assert(data_ptr); // should not be null
   double tmin = data_ptr->begin()->first;
   double tmax = data_ptr->rbegin()->first;
   return std::array<double,2>{tmin, tmax};
@@ -61,10 +63,30 @@ SolutionData3D::GetTimeBracket(double time)
   assert(data_ptr); // should not be null
   auto range = data_ptr->equal_range(time);
 
-  double t0 = range.first->first;
-  double t1 = range.first->first;
+  if(range.first == data_ptr->end() or
+     range.second == data_ptr->end()) {
+    print_error("*** Error: Time %e out of bounds.\n", time);
+    exit_mpi();
+  }
 
-  auto tbounds = GetTimeBounds();
+  double t0 = range.first->first;
+  double t1 = range.second->first;
+
+  auto low   = range.first;
+  auto upp   = range.second;
+
+  // find correct brackets
+  if(low == data_ptr->begin() && t0 != time) {
+    print_error("*** Error: Cannot find a valid time bracket "
+                "for time %e.\n", time);
+    exit_mpi();
+  }
+  else if(t0 != time)
+    low = std::prev(range.first);
+
+  t0 = low->first;
+  t1 = upp->first;
+
   return std::array<double,2>{t0, t1};
 
 }
@@ -76,8 +98,8 @@ SolutionData3D::Insert(double time, std::vector<Vec3D> &&data)
 {
 
   (*data_ptr)[time] = std::move(data);
-  num_stamps        = data_ptr->size();
-  num_data_rows     = data_ptr->begin()->second.size();
+  num_stamps        = (int)data_ptr->size();
+  num_data_rows     = (int)data_ptr->begin()->second.size();
 
 }
 
@@ -123,7 +145,7 @@ SolutionData3D::Flatten(std::vector<double> &flat)
 
       index += 3;
     }
-
+    
     //fprintf(stdout, "time = %e, soln size = %d, stamps = %d  ", time, (int)data.size(), num_stamps);
     //fprintf(stdout, "index: %d, rows: %d, size: %d.\n", index, GetRows(), container_size);
 

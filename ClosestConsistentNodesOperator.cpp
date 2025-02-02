@@ -8,7 +8,7 @@ extern int verbose;
 //------------------------------------------------------------
 
 ClosestConsistentNodesOperator::ClosestConsistentNodesOperator(IoData &iod_, MPI_Comm &comm_)
-                           : DynamicLoadOperator(iod_, comm_)
+                              : DynamicLoadOperator(iod_, comm_)
 {
   //
 }
@@ -37,7 +37,7 @@ void ClosestConsistentNodesOperator::LoadExistingSolutions()
 
 void
 ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                           std::vector<Vec3D> *force_over_area, double t)
+                                              std::vector<Vec3D> *force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
   int active_nodes = surface.active_nodes;
@@ -73,6 +73,8 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
 
   }
 
+  //fprintf(stdout, "Bracket (%e, %e) for time %e.\n", tk, tkp, t);
+
   // Get solutions at tk and tkp
   vector<Vec3D> &Sk  = proxi_solutions[0]->GetSolutionAtTime(tk);
   vector<Vec3D> &Skp = proxi_solutions[0]->GetSolutionAtTime(tkp);
@@ -91,7 +93,7 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
   }
 
   InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
-                    (double*)force.data(), active_nodes);
+                    (double*)force.data(), 3*active_nodes);
 
   // correct forces to forces*area
   for(int i=0; i<active_nodes; ++i) {
@@ -107,7 +109,8 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
       (*force_over_area)[i][1] = force[i][1];
       (*force_over_area)[i][2] = force[i][2];
     }
-    force[i] *= area;
+
+    force[i] = force[i]*area;
 
   }
 
@@ -122,9 +125,8 @@ void
 ClosestConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
                                                double t, double* output, int size)
 {
-  assert(t2>=t1);
-
-  double c1 = (t2 == t1) ? 1.0 : (t2-t)/(t2-t1);
+  assert(t2>t1);
+  double c1 = (t2-t)/(t2-t1);
   double c2 = 1.0 - c1;
   for(int i=0; i<size; i++)
     output[i] = c1*input1[i] + c2*input2[i];

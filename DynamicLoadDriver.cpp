@@ -85,6 +85,7 @@ void DynamicLoadDriver::Run()
 
   // All meta-level setup, such as nearest neighbor weights and surface maps,
   // will be computed here, before time stepping.
+  assert(dlo); // cannot be null.
   dlo->LoadExistingSurfaces();
   dlo->LoadExistingSolutions();
   dlo->BuildSurfacesToSurfaceMap(surface);
@@ -106,6 +107,7 @@ void DynamicLoadDriver::Run()
   double t = 0.0, dt = 0.0, tmax = 0.0;
   int time_step = 0;
   ComputeForces(surface, force, force_over_area.get(), t);
+  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), true);
 
   concurrent.CommunicateBeforeTimeStepping();
   dt   = concurrent.GetTimeStepSize();
