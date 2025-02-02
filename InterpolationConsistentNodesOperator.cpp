@@ -159,18 +159,17 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
   // compute forces
   for(int index=my_start_index; index<my_block_size; ++index) {
 
-    // elements attached to this node
-    auto elems = surface.node2elem[index];
+    // calculate nodal area and current normal.
+    Vec3D patch(0.0);
+    auto elems  = surface.node2elem[index];
+    int  nelems = elems.size();
+    for(auto it=elems.begin(); it!=elems.end(); ++it)
+      patch += surface.elemArea[*it]*surface.elemNorm[*it];
+    
+    patch /= nelems;
 
-    double area;
-    Vec3D  normal;
-
-    for(auto it=elems.begin(); it!=elems.end(); ++it) {
-      area   += surface.elemArea[*it]/3;
-      normal += surface.elemArea[*it]*surface.elemNorm[*it]; // area weighted
-    }
-
-    normal = normal/(3*area);
+    double area   = patch.norm();
+    Vec3D  normal = patch/area;
 
     // prepare for interpolation
     double xd[var_dim*num_points];

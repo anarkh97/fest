@@ -78,6 +78,7 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
   // Get solutions at tk and tkp
   vector<Vec3D> &Sk  = proxi_solutions[0]->GetSolutionAtTime(tk);
   vector<Vec3D> &Skp = proxi_solutions[0]->GetSolutionAtTime(tkp);
+  vector<Vec3D> S(active_nodes, Vec3D(0.0));
 
   if((int)Sk.size() != active_nodes) {
     print_error("*** Error: The number of nodes for point 1 at time (t = %e) "
@@ -93,28 +94,68 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
   }
 
   InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
-                    (double*)force.data(), 3*active_nodes);
+                    (double*)S.data(), 3*active_nodes);
 
-  // correct forces to forces*area
-  for(int i=0; i<active_nodes; ++i) {
+  int mpi_rank, mpi_size;
+  MPI_Comm_rank(comm, &mpi_rank);
+  MPI_Comm_size(comm, &mpi_size);
+  int nodes_per_rank = active_nodes / mpi_size;
+  int remainder      = active_nodes - nodes_per_rank*mpi_size;
 
-    auto elems = surface.node2elem[i];
+  assert(remainder >=0 and remainder < mpi_size);
+
+  vector<int> counts(mpi_size, -1);
+  vector<int> start_index(mpi_size, -1);
+
+  for(int i=0; i<mpi_size; ++i) {
+    counts[i]      = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
+    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i;
+  }
+
+  assert(start_index.back() + counts.back() == active_nodes);
+
+  int my_block_size  = counts[mpi_rank];
+  int my_start_index = start_index[mpi_rank];
+
+  for(int index=my_start_index; index<my_block_size; ++index) {
+
+    // get current area and normal
+    Vec3D patch(0.0);
+    auto elems  = surface.node2elem[index];
+    int  nelems = elems.size();
+    for(auto it=elems.begin(); it!=elems.end(); ++it)
+      patch += surface.elemArea[*it]*surface.elemNorm[*it];
     
-    double area;
-    for(auto it=elems.begin(); it!=elems.end(); ++it) 
-      area   += surface.elemArea[*it]/3;
+    patch /= nelems;
+
+    double area   = patch.norm();
+    Vec3D  normal = patch/area;
+
+    // calculate forces from pressures.
+    double pressure = S[index].norm();
 
     if(force_over_area) {
-      (*force_over_area)[i][0] = force[i][0];
-      (*force_over_area)[i][1] = force[i][1];
-      (*force_over_area)[i][2] = force[i][2];
+      (*force_over_area)[index][0] = pressure*normal[0]; 
+      (*force_over_area)[index][1] = pressure*normal[1]; 
+      (*force_over_area)[index][2] = pressure*normal[2]; 
     }
 
-    force[i] = force[i]*area;
+    force[index] = pressure*area*normal;
 
   }
 
-  MPI_Barrier(comm);
+  exit(-1);
+
+  // communication
+  for(int i=0; i<mpi_size; i++) {
+    counts[i] *= 3;
+    start_index[i] *= 3;
+  }
+  MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force.data(), 
+                 counts.data(), start_index.data(), MPI_DOUBLE, comm);
+  if(force_over_area)
+    MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force_over_area->data(), 
+                   counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
 }
 
