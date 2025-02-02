@@ -12,11 +12,11 @@ public:
 
   bool NeedSurface() override { return true; };
   void ProjectToTargetSurface(TriangulatedSurface& target_, 
-                              TriangulatedSurface& other_,
+                              TriangulatedSurface* other_,
                               std::vector<Vec3D>& output) override;
 
   void SetupProjectionMap(TriangulatedSurface& target, 
-                          TriangulatedSurface& other) override;
+                          TriangulatedSurface* other) override;
 };
 
 #endif

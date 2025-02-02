@@ -38,10 +38,10 @@ public:
 
   virtual bool NeedSurface() = 0;
   virtual void ProjectToTargetSurface(TriangulatedSurface& target_, 
-                                      TriangulatedSurface& other_,
+                                      TriangulatedSurface* other_,
                                       std::vector<Vec3D>& output) = 0;
   virtual void SetupProjectionMap(TriangulatedSurface& target, 
-                                  TriangulatedSurface& other) = 0;
+                                  TriangulatedSurface* other) = 0;
 };
 
 #endif

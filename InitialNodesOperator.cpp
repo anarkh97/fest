@@ -9,7 +9,7 @@ InitialNodesOperator::InitialNodesOperator(SpatialInterpolationData &data,
 
 void
 InitialNodesOperator::SetupProjectionMap(TriangulatedSurface &target,
-                                         TriangulatedSurface &other)
+                                         TriangulatedSurface *other)
 {
   print_error("*** Error: InitialNodesOperator::SetupProjectionMap() not "
               "implemented yet.\n");
@@ -18,7 +18,7 @@ InitialNodesOperator::SetupProjectionMap(TriangulatedSurface &target,
 
 void
 InitialNodesOperator::ProjectToTargetSurface(TriangulatedSurface &target,
-                                             TriangulatedSurface &other,
+                                             TriangulatedSurface *other,
                                              std::vector<Vec3D> &output)
 {
   print_error("*** Error: InitialNodesOperator::ProjectToTargetSurface() not "

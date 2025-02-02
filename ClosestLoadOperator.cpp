@@ -59,7 +59,7 @@ ClosestLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
 {
 
   assert(npo); //cannot be null
-  npo->SetupProjectionMap(surface, *closest_surface);
+  npo->SetupProjectionMap(surface, closest_surface);
 
 }
 
@@ -110,8 +110,8 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
   vector<Vec3D> &Skp = closest_solution->GetSolutionAtTime(tkp);
   vector<Vec3D> S(active_nodes, Vec3D(0.0));
 
-  npo->ProjectToTargetSurface(surface, *closest_surface, Sk);
-  npo->ProjectToTargetSurface(surface, *closest_surface, Skp);
+  npo->ProjectToTargetSurface(surface, closest_surface, Sk);
+  npo->ProjectToTargetSurface(surface, closest_surface, Skp);
   InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
                     (double*)S.data(), 3*active_nodes);
 

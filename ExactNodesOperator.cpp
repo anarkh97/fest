@@ -9,7 +9,7 @@ ExactNodesOperator::ExactNodesOperator(SpatialInterpolationData &data,
 
 void
 ExactNodesOperator::SetupProjectionMap(TriangulatedSurface &target,
-                                       TriangulatedSurface &other)
+                                       TriangulatedSurface *other)
 {
 
   // do nothing, this is one-to-one map
@@ -18,16 +18,20 @@ ExactNodesOperator::SetupProjectionMap(TriangulatedSurface &target,
 
 void
 ExactNodesOperator::ProjectToTargetSurface(TriangulatedSurface &target, 
-                                           TriangulatedSurface &other,
+                                           TriangulatedSurface *other,
                                            std::vector<Vec3D> &output)
 {
+ 
+  if(other) {
 
-  int &active_nodes = target.active_nodes;
+    int &active_nodes = target.active_nodes;
 
-  if(other.active_nodes != active_nodes) {
-    print_error("*** Error: The number of nodes on target surface and surface "
-                "existing simulation do match.\n");
-    exit_mpi();
+    if(other->active_nodes != active_nodes) {
+      print_error("*** Error: The number of nodes on target surface and surface "
+                  "existing simulation do match.\n");
+      exit_mpi();
+    }
+
   }
 
   return;

@@ -86,7 +86,7 @@ InterpolatedLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
   assert(npo); //cannot be null
   int num_points   = iod_meta.numPoints;
   for(int i=0; i<num_points; ++i)
-    npo->SetupProjectionMap(surface, *proxi_surfaces[i]);
+    npo->SetupProjectionMap(surface, proxi_surfaces[i]);
 
 }
 
@@ -140,8 +140,8 @@ InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vecto
     vector<Vec3D> &Skp = proxi_solutions[i]->GetSolutionAtTime(tkp);
     vector<Vec3D> &S   = proxi_forces[i];
 
-    npo->ProjectToTargetSurface(surface, *proxi_surfaces[i], Sk);
-    npo->ProjectToTargetSurface(surface, *proxi_surfaces[i], Skp);
+    npo->ProjectToTargetSurface(surface, proxi_surfaces[i], Sk);
+    npo->ProjectToTargetSurface(surface, proxi_surfaces[i], Skp);
     InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
                       (double*)S.data(), 3*active_nodes);
 

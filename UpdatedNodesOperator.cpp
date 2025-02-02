@@ -9,7 +9,7 @@ UpdatedNodesOperator::UpdatedNodesOperator(SpatialInterpolationData &data,
 
 void
 UpdatedNodesOperator::SetupProjectionMap(TriangulatedSurface &target,
-                                         TriangulatedSurface &other)
+                                         TriangulatedSurface *other)
 {
   print_error("*** Error: UpdatedNodesOperator::SetupProjectionMap() not "
               "implemented yet.\n");
@@ -18,7 +18,7 @@ UpdatedNodesOperator::SetupProjectionMap(TriangulatedSurface &target,
 
 void
 UpdatedNodesOperator::ProjectToTargetSurface(TriangulatedSurface &target,
-                                             TriangulatedSurface &other,
+                                             TriangulatedSurface *other,
                                              std::vector<Vec3D> &output)
 {
   print_error("*** Error: UpdatedNodesOperator::ProjectToTargetSurface() not "
