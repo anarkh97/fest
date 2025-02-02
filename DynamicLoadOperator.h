@@ -5,6 +5,7 @@
 #include<Vector3D.h>
 #include<FileHandler3D.h>
 #include<TriangulatedSurface.h>
+#include<NodalProjectionOperator.h>
 #include<string>
 #include<vector>
 #include<map>
@@ -28,36 +29,26 @@ protected:
   MPI_Comm& comm; 
   FileHandler3D file_handler;
 
-  //! Stores the solution data of each proximal FSI simulation
-  //! provided in the metafile.
-  std::vector<SolutionData3D*> proxi_solutions;
-
-  //! Stores the triangulated interface surfaces from proximal
-  //! FSI simulations provided in the metafile
-  std::vector<TriangulatedSurface*> proxi_surfaces;
+  NodalProjectionOperator *npo;
 
 public:
 
   DynamicLoadOperator(IoData& iod_, MPI_Comm& comm);
   ~DynamicLoadOperator() { }
 
-  // Methods for setup
-  virtual void BuildSurfacesToSurfaceMap(TriangulatedSurface& surface);
-  virtual void LoadExistingSurfaces();
-  virtual void LoadExistingSolutions();
+  virtual void LoadExistingSurfaces() = 0;
+  virtual void LoadExistingSolutions() = 0;
 
   virtual void Destroy();
-  virtual void ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
+  virtual void ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force,
                              std::vector<Vec3D> *force_over_area, double t) = 0;
+
+  virtual void SetupProjectionMap(TriangulatedSurface &surface) = 0;
 
 protected:
 
-  // Interpolation methods
-  virtual void InterpolateInMetaSpace(TriangulatedSurface &surface, std::vector<std::vector<Vec3D>> &solutions, 
-                                      std::vector<Vec3D> &force, std::vector<Vec3D> *force_over_area); 
-  virtual void InterpolateInSpace(std::vector<Vec3D>& X, int active_nodes, int dim, double* output);
-  virtual void InterpolateInTime(double t1, double* input1, double t2, double* input2,
-                                 double t, double* output, int size);
+  void InterpolateInTime(double t1, double* input1, double t2, double* input2,
+                         double t, double* output, int size);
 
 
 };

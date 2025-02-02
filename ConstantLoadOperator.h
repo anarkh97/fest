@@ -11,7 +11,7 @@
  * values.
  *********************************************/
 
-//! Simple interpolation operator 
+//! Constant load operator
 class ConstantLoadOperator : public DynamicLoadOperator {
 
 public:
@@ -25,6 +25,7 @@ public:
   void ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D>& force,
                      std::vector<Vec3D>* force_over_area, double t) override;
 
+  void SetupProjectionMap(TriangulatedSurface &surface) override;
 };
 
 #endif

@@ -76,11 +76,14 @@ AerosMessenger.cpp
 TriangulatedSurface.cpp
 SolutionData3D.cpp
 FileHandler3D.cpp
+NodalProjectionOperator.cpp
+ExactNodesOperator.cpp
+InitialNodesOperator.cpp
+UpdatedNodesOperator.cpp
 DynamicLoadOperator.cpp
 ConstantLoadOperator.cpp
-ClosestConsistentNodesOperator.cpp
-InterpolationConsistentNodesOperator.cpp
-InterpolationMappedNodesOperator.cpp
+ClosestLoadOperator.cpp
+InterpolatedLoadOperator.cpp
 DynamicLoadDriver.cpp
 LagrangianOutput.cpp
 Utils.cpp

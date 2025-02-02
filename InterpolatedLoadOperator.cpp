@@ -1,4 +1,4 @@
-#include<InterpolationConsistentNodesOperator.h>
+#include<InterpolatedLoadOperator.h>
 #include<MathTools/rbf_interp.hpp>
 
 using std::vector;
@@ -7,25 +7,94 @@ extern int verbose;
 
 //------------------------------------------------------------
 
-InterpolationConsistentNodesOperator::InterpolationConsistentNodesOperator(IoData &iod_, MPI_Comm &comm_)
-                                    : DynamicLoadOperator(iod_, comm_)
+InterpolatedLoadOperator::InterpolatedLoadOperator(IoData &iod_, MPI_Comm &comm_)
+                        : DynamicLoadOperator(iod_, comm_)
 {
-  //
+   
+  int num_points = iod_meta.numPoints;
+  // resize solution container
+  proxi_solutions.resize(num_points, nullptr);
+  proxi_surfaces.resize(num_points, nullptr);
+
 }
 
 //------------------------------------------------------------
 
-void InterpolationConsistentNodesOperator::LoadExistingSurfaces()
+InterpolatedLoadOperator::~InterpolatedLoadOperator() {
+ 
+  if(!proxi_solutions.empty())
+    for(int i=0; i<(int)proxi_solutions.size(); ++i) {
+      if(proxi_solutions[i]) delete proxi_solutions[i];
+    }
+
+  if(!proxi_surfaces.empty())
+    for(int i=0; i<(int)proxi_surfaces.size(); ++i) {
+      if(proxi_surfaces[i]) delete proxi_surfaces[i];
+    }
+
+}
+
+//------------------------------------------------------------
+
+void InterpolatedLoadOperator::LoadExistingSurfaces()
 {
-  // we do not need other surfaces as one-to-one mapping is
-  // assumed.
+
+  if(!npo->NeedSurface()) return;
+
+  int num_points = iod_meta.numPoints;
+  for(int i=0; i<num_points; ++i) {
+  
+    // create new "empty" triangulated surface
+    proxi_surfaces[i] = new TriangulatedSurface();
+    string &filename  = file_handler.GetMeshFileForProxim(i);
+    file_handler.ReadMeshFile(filename, proxi_surfaces[i]->X, 
+                              proxi_surfaces[i]->elems);
+
+    proxi_surfaces[i]->X0 = proxi_surfaces[i]->X;
+    proxi_surfaces[i]->BuildConnectivities();
+    proxi_surfaces[i]->CalculateNormalsAndAreas();
+
+  }
+
+}
+
+//------------------------------------------------------------
+
+void InterpolatedLoadOperator::LoadExistingSolutions()
+{
+  int num_points = iod_meta.numPoints;
+  for(int i=0; i<num_points; ++i) {
+  
+    // create new "empty" solution containers
+    proxi_solutions[i] = new SolutionData3D();
+
+    // first get the solution file name from file handler
+    string &filename = file_handler.GetSolnFileForProxim(i);
+
+    // read this solution file and update the solution container
+    file_handler.ReadSolutionFile(filename, *proxi_solutions[i]);
+
+  } 
 }
 
 //------------------------------------------------------------
 
 void
-InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                                    std::vector<Vec3D> *force_over_area, double t)
+InterpolatedLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
+{
+
+  assert(npo); //cannot be null
+  int num_points   = iod_meta.numPoints;
+  for(int i=0; i<num_points; ++i)
+    npo->SetupProjectionMap(surface, *proxi_surfaces[i]);
+
+}
+
+//------------------------------------------------------------
+
+void
+InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
+                                        std::vector<Vec3D> *force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
   int active_nodes = surface.active_nodes;
@@ -71,19 +140,8 @@ InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface
     vector<Vec3D> &Skp = proxi_solutions[i]->GetSolutionAtTime(tkp);
     vector<Vec3D> &S   = proxi_forces[i];
 
-    if((int)Sk.size() != active_nodes) {
-      print_error("*** Error: The number of nodes for point %d at time (t = %e) "
-                  "does not match the number of nodes on the target surface.\n",
-		  i+1, tk);
-      exit_mpi();
-    }
-    if((int)Skp.size() != active_nodes) {
-      print_error("*** Error: The number of nodes for point %d at time (t = %e) "
-                  "does not match the number of nodes on the target surface.\n",
-		  i+1, tkp);
-      exit_mpi();
-    }
-
+    npo->ProjectToTargetSurface(surface, *proxi_surfaces[i], Sk);
+    npo->ProjectToTargetSurface(surface, *proxi_surfaces[i], Skp);
     InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
                       (double*)S.data(), 3*active_nodes);
 
@@ -97,8 +155,8 @@ InterpolationConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface
 //------------------------------------------------------------
 
 void 
-InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
-                                                             vector<Vec3D> &force, vector<Vec3D> *force_over_area) 
+InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
+                                                 vector<Vec3D> &force, vector<Vec3D> *force_over_area) 
 {
 
   int active_nodes = surface.active_nodes;
@@ -215,18 +273,3 @@ InterpolationConsistentNodesOperator::InterpolateInMetaSpace(TriangulatedSurface
 }
 
 //------------------------------------------------------------
-
-//! Copied from DynamicLoadCalculator::InterpolateInTime
-void
-InterpolationConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
-                                                        double t, double* output, int size)
-{
-  assert(t2>t1);
-  double c1 = (t2-t)/(t2-t1);
-  double c2 = 1.0 - c1;
-  for(int i=0; i<size; i++)
-    output[i] = c1*input1[i] + c2*input2[i];
-}
-
-//------------------------------------------------------------
-

@@ -215,7 +215,7 @@ void MetaInputData::setup(const char *name, ClassAssigner *father)
 
 SpatialInterpolationData::SpatialInterpolationData()
 {
-  //
+  type = EXACT;
 }
 
 //------------------------------------------------------------------------------

@@ -1,4 +1,4 @@
-#include<ClosestConsistentNodesOperator.h>
+#include<ClosestLoadOperator.h>
 #include<MathTools/rbf_interp.hpp>
 
 using std::vector;
@@ -7,37 +7,67 @@ extern int verbose;
 
 //------------------------------------------------------------
 
-ClosestConsistentNodesOperator::ClosestConsistentNodesOperator(IoData &iod_, MPI_Comm &comm_)
-                              : DynamicLoadOperator(iod_, comm_)
+ClosestLoadOperator::ClosestLoadOperator(IoData &iod_, MPI_Comm &comm_)
+                   : DynamicLoadOperator(iod_, comm_)
 {
   //
 }
 
 //------------------------------------------------------------
 
-void ClosestConsistentNodesOperator::LoadExistingSurfaces()
+ClosestLoadOperator::~ClosestLoadOperator()
 {
-  // we do not need other surfaces as one-to-one mapping is
-  // assumed.
+
+  if(closest_solution) delete closest_solution;
+  if(closest_surface) delete closest_surface;
+
 }
 
 //------------------------------------------------------------
 
-void ClosestConsistentNodesOperator::LoadExistingSolutions()
+void ClosestLoadOperator::LoadExistingSurfaces()
 {
 
-  proxi_solutions.resize(1);
-  proxi_solutions[0] = new SolutionData3D();
+  if(!npo->NeedSurface()) return;
+  
+  closest_surface    = new TriangulatedSurface();
+  string &filename   = file_handler.GetMeshFileForProxim(0);
+  file_handler.ReadMeshFile(filename, closest_surface->X,
+                            closest_surface->elems);
+  
+  closest_surface->X0 = closest_surface->X;
+  closest_surface->BuildConnectivities();
+  closest_surface->CalculateNormalsAndAreas();  
+
+}
+
+//------------------------------------------------------------
+
+void ClosestLoadOperator::LoadExistingSolutions()
+{
+
+  closest_solution   = new SolutionData3D();
   string &filename   = file_handler.GetSolnFileForProxim(0);
-  file_handler.ReadSolutionFile(filename, *proxi_solutions[0]);
+  file_handler.ReadSolutionFile(filename, *closest_solution);
 
 }
 
 //------------------------------------------------------------
 
 void
-ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                              std::vector<Vec3D> *force_over_area, double t)
+ClosestLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
+{
+
+  assert(npo); //cannot be null
+  npo->SetupProjectionMap(surface, *closest_surface);
+
+}
+
+//------------------------------------------------------------
+
+void
+ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
+                                   std::vector<Vec3D> *force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
   int active_nodes = surface.active_nodes;
@@ -53,7 +83,7 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
 
   // find the time interval
   double tk, tkp;
-  auto time_bounds = proxi_solutions[0]->GetTimeBounds();
+  auto time_bounds = closest_solution->GetTimeBounds();
 
   if(t<time_bounds[0]) {
     tk = tkp = time_bounds[0];
@@ -67,7 +97,7 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
   }
   else {
 
-    auto bracket = proxi_solutions[0]->GetTimeBracket(t);
+    auto bracket = closest_solution->GetTimeBracket(t);
     tk  = bracket[0];
     tkp = bracket[1];
 
@@ -76,23 +106,12 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
   //fprintf(stdout, "Bracket (%e, %e) for time %e.\n", tk, tkp, t);
 
   // Get solutions at tk and tkp
-  vector<Vec3D> &Sk  = proxi_solutions[0]->GetSolutionAtTime(tk);
-  vector<Vec3D> &Skp = proxi_solutions[0]->GetSolutionAtTime(tkp);
+  vector<Vec3D> &Sk  = closest_solution->GetSolutionAtTime(tk);
+  vector<Vec3D> &Skp = closest_solution->GetSolutionAtTime(tkp);
   vector<Vec3D> S(active_nodes, Vec3D(0.0));
 
-  if((int)Sk.size() != active_nodes) {
-    print_error("*** Error: The number of nodes for point 1 at time (t = %e) "
-                "does not match the number of nodes on the target surface.\n",
-      	        tk);
-    exit_mpi();
-  }
-  if((int)Skp.size() != active_nodes) {
-    print_error("*** Error: The number of nodes for point 1 at time (t = %e) "
-                "does not match the number of nodes on the target surface.\n",
-      	        tkp);
-    exit_mpi();
-  }
-
+  npo->ProjectToTargetSurface(surface, *closest_surface, Sk);
+  npo->ProjectToTargetSurface(surface, *closest_surface, Skp);
   InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
                     (double*)S.data(), 3*active_nodes);
 
@@ -144,8 +163,6 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
 
   }
 
-  exit(-1);
-
   // communication
   for(int i=0; i<mpi_size; i++) {
     counts[i] *= 3;
@@ -157,20 +174,6 @@ ClosestConsistentNodesOperator::ComputeForces(TriangulatedSurface& surface, std:
     MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force_over_area->data(), 
                    counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
-}
-
-//------------------------------------------------------------
-
-//! Copied from DynamicLoadCalculator::InterpolateInTime
-void
-ClosestConsistentNodesOperator::InterpolateInTime(double t1, double* input1, double t2, double* input2,
-                                               double t, double* output, int size)
-{
-  assert(t2>t1);
-  double c1 = (t2-t)/(t2-t1);
-  double c2 = 1.0 - c1;
-  for(int i=0; i<size; i++)
-    output[i] = c1*input1[i] + c2*input2[i];
 }
 
 //------------------------------------------------------------

@@ -5,10 +5,6 @@
 #include<ConcurrentProgramsHandler.h>
 #include<TriangulatedSurface.h>
 #include<DynamicLoadOperator.h>
-#include<ConstantLoadOperator.h>
-#include<ClosestConsistentNodesOperator.h>
-#include<InterpolationConsistentNodesOperator.h>
-#include<InterpolationMappedNodesOperator.h>
 #include<LagrangianOutput.h>
 #include<Vector3D.h>
 #include<vector>

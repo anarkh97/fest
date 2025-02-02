@@ -1,3 +1,6 @@
+#include<ConstantLoadOperator.h>
+#include<ClosestLoadOperator.h>
+#include<InterpolatedLoadOperator.h>
 #include<DynamicLoadDriver.h>
 #include<cstring>
 
@@ -28,23 +31,12 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
       dlo = new ConstantLoadOperator(iod, comm);
       break;
     }
-    case DynamicLoadCalculatorData::CLOSEST_STATIC : {
-      dlo = new ClosestConsistentNodesOperator(iod, comm);
+    case DynamicLoadCalculatorData::CLOSEST : {
+      dlo = new ClosestLoadOperator(iod, comm);
       break;
     }
-    case DynamicLoadCalculatorData::CLOSEST_MAPPED : {
-      //dlo = new ClosestConsistentNodesOperator(iod, comm);
-      print_error("*** Error: Dynamic load calculator based on closest point solution "
-                  "node-to-node mapping has not been implemented yet.\n");
-      exit_mpi();
-      break;
-    }
-    case DynamicLoadCalculatorData::INTERP_STATIC : {
-      dlo = new InterpolationConsistentNodesOperator(iod, comm);
-      break;
-    }
-    case DynamicLoadCalculatorData::INTERP_MAPPED : {
-      dlo = new InterpolationMappedNodesOperator(iod, comm);
+    case DynamicLoadCalculatorData::INTERP : {
+      dlo = new InterpolatedLoadOperator(iod, comm);
       break;
     }
     case DynamicLoadCalculatorData::NONE : {
@@ -88,7 +80,7 @@ void DynamicLoadDriver::Run()
   assert(dlo); // cannot be null.
   dlo->LoadExistingSurfaces();
   dlo->LoadExistingSolutions();
-  dlo->BuildSurfacesToSurfaceMap(surface);
+  dlo->SetupProjectionMap(surface);
   double overhead_time = walltime();
 
   if(verbose>1)

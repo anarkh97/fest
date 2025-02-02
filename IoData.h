@@ -167,12 +167,14 @@ struct MetaInputData {
 
 //------------------------------------------------------------------------------
 
-//! This data structure contains user inputs for spacial reconstruction of 
+//! This data structure contains user inputs for spacial reconstruction of
 //! fluid-structure interface pressure based on exisiting FSI simulations.
-//! Barycentric/radial basis interpolations are used for the reconstruction. 
+//! Barycentric/radial basis interpolations are used for the reconstruction.
 //! Currently, not implemented.
 struct SpatialInterpolationData {
 
+  enum Type {EXACT=0, INITIAL, UPDATED} type;
+  
   SpatialInterpolationData();
   ~SpatialInterpolationData() {}
 
@@ -184,9 +186,8 @@ struct SpatialInterpolationData {
 
 struct DynamicLoadCalculatorData {
 
-  enum Type {NONE = 0, CONSTANT, CLOSEST_STATIC, CLOSEST_MAPPED, 
-             INTERP_STATIC, INTERP_MAPPED} type;
-  
+  enum Type {NONE = 0, CONSTANT, CLOSEST, INTERP} type;
+
   enum VerbosityLevel {LOW = 0, MEDIUM = 1, HIGH = 2} verbose;
 
   double pressure;

@@ -29,6 +29,13 @@ void ConstantLoadOperator::LoadExistingSolutions()
 
 //------------------------------------------------------------
 
+void ConstantLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
+{
+  // we do not need a surface map.
+}
+
+//------------------------------------------------------------
+
 void
 ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
                                     std::vector<Vec3D> *force_over_area, double t)
