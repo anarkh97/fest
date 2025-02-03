@@ -247,9 +247,8 @@ void DynamicLoadCalculatorData::setup(const char *name, ClassAssigner *father)
   ClassAssigner *ca = new ClassAssigner(name, 5, father);
 
   new ClassToken<DynamicLoadCalculatorData> (ca, "Type", this,
-     reinterpret_cast<int DynamicLoadCalculatorData::*>(&DynamicLoadCalculatorData::type), 6,
-     "None", 0, "Constant", 1, "ClosestStatic", 2, "ClosestMapped", 3, "InterpStatic", 4, 
-     "InterpMapped", 5);
+     reinterpret_cast<int DynamicLoadCalculatorData::*>(&DynamicLoadCalculatorData::type), 4,
+     "None", 0, "Constant", 1, "Closest", 2, "Interp", 3);
 
   new ClassToken<DynamicLoadCalculatorData>(ca, "VerboseScreenOutput", this,
       reinterpret_cast<int DynamicLoadCalculatorData::*>(&DynamicLoadCalculatorData::verbose), 3,
