@@ -67,7 +67,7 @@ ClosestLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
 
 void
 ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                   std::vector<Vec3D> *force_over_area, double t)
+                                   std::vector<Vec3D> &force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
   int active_nodes = surface.active_nodes;
@@ -77,8 +77,7 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
   // clear existing data
   for(int i=0; i<active_nodes; ++i) {
     force[i] = Vec3D(0.0);
-    if(force_over_area)
-      (*force_over_area)[i] = Vec3D(0.0);
+    force_over_area[i] = Vec3D(0.0);
   }
 
   // find the time interval
@@ -153,13 +152,8 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
     // calculate forces from pressures.
     double pressure = S[index].norm();
 
-    if(force_over_area) {
-      (*force_over_area)[index][0] = pressure*normal[0]; 
-      (*force_over_area)[index][1] = pressure*normal[1]; 
-      (*force_over_area)[index][2] = pressure*normal[2]; 
-    }
-
-    force[index] = pressure*area*normal;
+    force[index]           = pressure*area*normal;
+    force_over_area[index] = pressure*normal; 
 
   }
 
@@ -170,9 +164,8 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
   }
   MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force.data(), 
                  counts.data(), start_index.data(), MPI_DOUBLE, comm);
-  if(force_over_area)
-    MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force_over_area->data(), 
-                   counts.data(), start_index.data(), MPI_DOUBLE, comm);
+  MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force_over_area.data(), 
+                 counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
 }
 

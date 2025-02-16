@@ -43,7 +43,9 @@ public:
 private:
 
   void ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force, 
-                     std::vector<Vec3D> *force_over_area, double t);
+                     std::vector<Vec3D> &force_over_area, double t);
+
+  void ComputeError(std::vector<Vec3D> &force_over_area, double t, double &error);
 
 };
 

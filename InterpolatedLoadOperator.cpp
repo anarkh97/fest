@@ -97,8 +97,8 @@ InterpolatedLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
 //------------------------------------------------------------
 
 void
-InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                        std::vector<Vec3D> *force_over_area, double t)
+InterpolatedLoadOperator::ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force,
+                                        std::vector<Vec3D> &force_over_area, double t)
 {
   int num_points   = iod_meta.numPoints;
   int active_nodes = surface.active_nodes;
@@ -108,8 +108,7 @@ InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vecto
   // clear existing data
   for(int i=0; i<active_nodes; ++i) {
     force[i] = Vec3D(0.0);
-    if(force_over_area)
-      (*force_over_area)[i] = Vec3D(0.0);
+    force_over_area[i] = Vec3D(0.0);
   }
 
   vector<vector<Vec3D>> neighbor_forces(num_points, 
@@ -160,7 +159,7 @@ InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vecto
 
 void 
 InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, vector<vector<Vec3D>> &solutions, 
-                                                 vector<Vec3D> &force, vector<Vec3D> *force_over_area) 
+                                                 vector<Vec3D> &force, vector<Vec3D> &force_over_area) 
 {
 
   int active_nodes = surface.active_nodes;
@@ -256,9 +255,8 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
                           targ.data(), interp.data());
 
-    force[index] = interp[0]*area*normal;   
-    if(force_over_area)
-      (*force_over_area)[index] = interp[0]*normal;
+    force[index]           = interp[0]*area*normal;   
+    force_over_area[index] = interp[0]*normal;
 
   }	  
 
@@ -270,9 +268,8 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
   }
   MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force.data(), 
                  counts.data(), start_index.data(), MPI_DOUBLE, comm);
-  if(force_over_area)
-    MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force_over_area->data(), 
-                   counts.data(), start_index.data(), MPI_DOUBLE, comm);
+  MPI_Allgatherv(MPI_IN_PLACE, 3*my_block_size, MPI_DOUBLE, (double*)force_over_area.data(), 
+                 counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
 }
 

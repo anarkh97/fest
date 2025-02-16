@@ -70,7 +70,7 @@ void DynamicLoadDriver::Run()
   // We will populate force and send it to Aero-S.
   TriangulatedSurface       surface;
   vector<Vec3D>             force; 
-  shared_ptr<vector<Vec3D>> force_over_area = nullptr; // only used for output
+  vector<Vec3D>             force_over_area;
 
   // This will populate the surface object from Aero-S.
   concurrent.InitializeMessengers(&surface, &force);
@@ -89,17 +89,15 @@ void DynamicLoadDriver::Run()
   // Output recieved surface
   lagout.OutputTriangulatedMesh(surface.X0, surface.elems);
 
-  // allocated space for force over area if the output is requested.
-  if(iod.output.force_over_area[0] != 0) 
-    force_over_area = make_shared<vector<Vec3D>>(surface.active_nodes, Vec3D(0.)); 
-
   // ---------------------------------------------------
   // Main time loop (mimics the time loop in Main.cpp
   // ---------------------------------------------------
+  double error = 0.0;
   double t = 0.0, dt = 0.0, tmax = 0.0;
   int time_step = 0;
-  ComputeForces(surface, force, force_over_area.get(), t);
-  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), true);
+  ComputeForces(surface, force, force_over_area, t);
+  ComputeError(force_over_area, t, error);
+  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, true);
 
   if(concurrent.Coupled())
     concurrent.CommunicateBeforeTimeStepping();
@@ -127,7 +125,8 @@ void DynamicLoadDriver::Run()
     print("Step %d: t = %e, dt = %e. Computation time: %.4e s.\n", 
           time_step, t, dt, walltime()-start_time);
  
-    ComputeForces(surface, force, force_over_area.get(), t); 
+    ComputeForces(surface, force, force_over_area, t); 
+    ComputeError(force_over_area, t, error);
 
     if(concurrent.Coupled()) {
 
@@ -143,18 +142,19 @@ void DynamicLoadDriver::Run()
 
     }
 
-    lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), false);
+    lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, false);
   }
 
   if(concurrent.Coupled())
     concurrent.FinalExchange();
 
-  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), true);
+  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, true);
 
   print("\n");
   print("\033[0;32m==========================================\033[0m\n");
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
+  print("Total Mean Squared Error    : %f \n", error/time_step);
   print("Total File I/O Overhead Time: %f sec.\n", overhead_time - start_time);
   print("Total Time For Integration  : %f sec.\n", walltime()    - overhead_time);
   print("Total Computation Time      : %f sec.\n", walltime()    - start_time);
@@ -166,11 +166,22 @@ void DynamicLoadDriver::Run()
 
 void
 DynamicLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3D> &force, 
-                                 vector<Vec3D> *force_over_area, double t)
+                                 vector<Vec3D> &force_over_area, double t)
 {
 
   assert(dlo); // cannot be null
   dlo->ComputeForces(surface, force, force_over_area, t);
+
+}
+
+//------------------------------------------------------------
+
+void
+DynamicLoadDriver::ComputeError(vector<Vec3D> &force_over_area, double t, double &error)
+{
+  
+  assert(dlo); // cannot be null
+  error += dlo->ComputeError(force_over_area, t);
 
 }
 

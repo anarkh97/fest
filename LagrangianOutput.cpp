@@ -83,7 +83,7 @@ LagrangianOutput::OutputTriangulatedMesh(vector<Vec3D>& X0, vector<Int3>& elems)
 
 void
 LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<Vec3D>& X0, std::vector<Vec3D>& X,
-                                std::vector<Vec3D>& F, std::vector<Vec3D>* F2_ptr, bool force_write)
+                                std::vector<Vec3D>& F, std::vector<Vec3D>& F2_ptr, bool force_write)
 {
 
   if(iod_lag.frequency_dt<=0.0 && iod_lag.frequency<=0)
@@ -165,7 +165,6 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
   } 
 
   if(strcmp(iod_lag.force_over_area,"")) {
-    assert(F2_ptr); // should not be NULL
 
     char outname[512];
     sprintf(outname, "%s%s", iod_lag.prefix, iod_lag.force_over_area);
@@ -177,7 +176,7 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
         exit(-1);
       }
       fprintf(fovera_file, "Vector FORCE_OVER_AREA under NLDynamic for MyNodes\n");
-      fprintf(fovera_file, "%d\n", (int)F2_ptr->size());
+      fprintf(fovera_file, "%d\n", (int)F2_ptr.size());
       fclose(fovera_file);
     }
 
@@ -186,7 +185,7 @@ LagrangianOutput::OutputResults(double t, double dt, int time_step, std::vector<
       fprintf(stdout,"\033[0;31m*** Error: Cannot write file %s.\n\033[0m", outname);
       exit(-1);
     }
-    AppendResultToFile(fovera_file, t, F2_ptr->size(), 3, (double*)F2_ptr->data());
+    AppendResultToFile(fovera_file, t, F2_ptr.size(), 3, (double*)F2_ptr.data());
   }
 
 END_OF_OUTPUT:

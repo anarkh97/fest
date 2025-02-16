@@ -29,6 +29,12 @@ protected:
   MPI_Comm& comm; 
   FileHandler3D file_handler;
 
+  //! true solution at target point. Used for error
+  //! calculations.
+  SolutionData3D* true_solution;
+
+  //! Projection operator used when surface topology
+  //! of different point does not match.
   NodalProjectionOperator *npo;
 
 public:
@@ -41,15 +47,16 @@ public:
 
   virtual void Destroy();
   virtual void ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force,
-                             std::vector<Vec3D> *force_over_area, double t) = 0;
+                             std::vector<Vec3D> &force_over_area, double t) = 0;
 
   virtual void SetupProjectionMap(TriangulatedSurface &surface) = 0;
+
+  double ComputeError(std::vector<Vec3D> &force_over_area, double t);
 
 protected:
 
   void InterpolateInTime(double t1, double* input1, double t2, double* input2,
                          double t, double* output, int size);
-
 
 };
 

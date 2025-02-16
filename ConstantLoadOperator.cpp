@@ -38,7 +38,7 @@ void ConstantLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
 
 void
 ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D> &force,
-                                    std::vector<Vec3D> *force_over_area, double t)
+                                    std::vector<Vec3D> &force_over_area, double t)
 {
 
   // pass a constant pressure * area to aero-s for testing.
@@ -52,8 +52,7 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
   // clear old force values
   for(int i=0; i<active_nodes; ++i) {
     force[i] = Vec3D(0.);
-    if(force_over_area)
-      (*force_over_area)[i] = Vec3D(0.0);
+    force_over_area[i] = Vec3D(0.0);
   }
 
   int mpi_rank, mpi_size;
@@ -94,8 +93,7 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
       force[index] += (1e6)*area*normalz;
     }
 
-    if(force_over_area) 
-      (*force_over_area)[index] = 1e6*normalz;
+    force_over_area[index] = 1e6*normalz;
 
   }
 
@@ -106,9 +104,8 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
   }
   MPI_Allgatherv(MPI_IN_PLACE, 3*my_node_size, MPI_DOUBLE, (double*)force.data(), 
                  counts.data(), start_index.data(), MPI_DOUBLE, comm);
-  if(force_over_area)
-    MPI_Allgatherv(MPI_IN_PLACE, 3*my_node_size, MPI_DOUBLE, (double*)force_over_area->data(), 
-                   counts.data(), start_index.data(), MPI_DOUBLE, comm);
+  MPI_Allgatherv(MPI_IN_PLACE, 3*my_node_size, MPI_DOUBLE, (double*)force_over_area.data(), 
+                 counts.data(), start_index.data(), MPI_DOUBLE, comm);
 
 }
 

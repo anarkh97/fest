@@ -40,7 +40,7 @@ public:
 
   void OutputTriangulatedMesh(std::vector<Vec3D>& X0, std::vector<Int3>& elems);
   void OutputResults(double t, double dt, int time_step, std::vector<Vec3D>& X0, std::vector<Vec3D>& X, 
-                     std::vector<Vec3D>& F, std::vector<Vec3D>* F2_ptr, bool force_write); 
+                     std::vector<Vec3D>& F, std::vector<Vec3D>& F2_ptr, bool force_write); 
                 
 private:
 
