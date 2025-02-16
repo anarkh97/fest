@@ -18,11 +18,6 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
                  : iod(iod_), comm(comm_), concurrent(concurrent_), 
                    lagout(comm_, iod_.output)
 {
-  if(iod.concurrent.aeros.fsi_algo == AerosCouplingData::NONE) {
-    print_error("*** Error: Currently FEST operate as a stand-alone program. "
-                "It must be coupled with Aero-S.\n");
-    exit_mpi();
-  }
 
   // Setup the interpolator.
   switch(iod.calculator.type) {
