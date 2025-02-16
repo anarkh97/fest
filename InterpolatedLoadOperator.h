@@ -17,11 +17,11 @@ class InterpolatedLoadOperator : public DynamicLoadOperator {
 
   //! Stores the solution data of each proximal FSI simulation
   //! provided in the metafile.
-  std::vector<SolutionData3D*> proxi_solutions;
+  std::vector<SolutionData3D*> neighbor_solutions;
 
   //! Stores the triangulated interface surfaces from proximal
   //! FSI simulations provided in the metafile
-  std::vector<TriangulatedSurface*> proxi_surfaces;
+  std::vector<TriangulatedSurface*> neighbor_surfaces;
 
 public:
 

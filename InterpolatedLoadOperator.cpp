@@ -13,8 +13,8 @@ InterpolatedLoadOperator::InterpolatedLoadOperator(IoData &iod_, MPI_Comm &comm_
    
   int num_points = iod_meta.numPoints;
   // resize solution container
-  proxi_solutions.resize(num_points, nullptr);
-  proxi_surfaces.resize(num_points, nullptr);
+  neighbor_solutions.resize(num_points, nullptr);
+  neighbor_surfaces.resize(num_points, nullptr);
 
 }
 
@@ -22,14 +22,14 @@ InterpolatedLoadOperator::InterpolatedLoadOperator(IoData &iod_, MPI_Comm &comm_
 
 InterpolatedLoadOperator::~InterpolatedLoadOperator() {
  
-  if(!proxi_solutions.empty())
-    for(int i=0; i<(int)proxi_solutions.size(); ++i) {
-      if(proxi_solutions[i]) delete proxi_solutions[i];
+  if(!neighbor_solutions.empty())
+    for(int i=0; i<(int)neighbor_solutions.size(); ++i) {
+      if(neighbor_solutions[i]) delete neighbor_solutions[i];
     }
 
-  if(!proxi_surfaces.empty())
-    for(int i=0; i<(int)proxi_surfaces.size(); ++i) {
-      if(proxi_surfaces[i]) delete proxi_surfaces[i];
+  if(!neighbor_surfaces.empty())
+    for(int i=0; i<(int)neighbor_surfaces.size(); ++i) {
+      if(neighbor_surfaces[i]) delete neighbor_surfaces[i];
     }
 
 }
@@ -45,14 +45,18 @@ void InterpolatedLoadOperator::LoadExistingSurfaces()
   for(int i=0; i<num_points; ++i) {
   
     // create new "empty" triangulated surface
-    proxi_surfaces[i] = new TriangulatedSurface();
-    string &filename  = file_handler.GetMeshFileForProxim(i);
-    file_handler.ReadMeshFile(filename, proxi_surfaces[i]->X, 
-                              proxi_surfaces[i]->elems);
+    neighbor_surfaces[i] = new TriangulatedSurface();
 
-    proxi_surfaces[i]->X0 = proxi_surfaces[i]->X;
-    proxi_surfaces[i]->BuildConnectivities();
-    proxi_surfaces[i]->CalculateNormalsAndAreas();
+    // first get the mesh file name from file handler
+    string filename      = file_handler.GetMeshFileForNeighbor(i);
+
+    // read this mesh file and update TriangulatedSurface
+    file_handler.ReadMeshFile(filename, neighbor_surfaces[i]->X, 
+                              neighbor_surfaces[i]->elems);
+
+    neighbor_surfaces[i]->X0 = neighbor_surfaces[i]->X;
+    neighbor_surfaces[i]->BuildConnectivities();
+    neighbor_surfaces[i]->CalculateNormalsAndAreas();
 
   }
 
@@ -66,13 +70,13 @@ void InterpolatedLoadOperator::LoadExistingSolutions()
   for(int i=0; i<num_points; ++i) {
   
     // create new "empty" solution containers
-    proxi_solutions[i] = new SolutionData3D();
+    neighbor_solutions[i] = new SolutionData3D();
 
     // first get the solution file name from file handler
-    string &filename = file_handler.GetSolnFileForProxim(i);
+    string filename = file_handler.GetSolnFileForNeighbor(i);
 
     // read this solution file and update the solution container
-    file_handler.ReadSolutionFile(filename, *proxi_solutions[i]);
+    file_handler.ReadSolutionFile(filename, *neighbor_solutions[i]);
 
   } 
 }
@@ -86,7 +90,7 @@ InterpolatedLoadOperator::SetupProjectionMap(TriangulatedSurface &surface)
   assert(npo); //cannot be null
   int num_points   = iod_meta.numPoints;
   for(int i=0; i<num_points; ++i)
-    npo->SetupProjectionMap(surface, proxi_surfaces[i]);
+    npo->SetupProjectionMap(surface, neighbor_surfaces[i]);
 
 }
 
@@ -108,14 +112,14 @@ InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vecto
       (*force_over_area)[i] = Vec3D(0.0);
   }
 
-  vector<vector<Vec3D>> proxi_forces(num_points, 
-                                     vector<Vec3D>(active_nodes, Vec3D(0.0)));
+  vector<vector<Vec3D>> neighbor_forces(num_points, 
+                                        vector<Vec3D>(active_nodes, Vec3D(0.0)));
 
   for(int i=0; i<num_points; ++i) {
 
     // find the time interval
     double tk, tkp;
-    auto time_bounds = proxi_solutions[i]->GetTimeBounds();
+    auto time_bounds = neighbor_solutions[i]->GetTimeBounds();
 
     if(t<time_bounds[0]) {
       tk = tkp = time_bounds[0];
@@ -129,25 +133,25 @@ InterpolatedLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vecto
     }
     else {
 
-      auto bracket = proxi_solutions[i]->GetTimeBracket(t);
+      auto bracket = neighbor_solutions[i]->GetTimeBracket(t);
       tk  = bracket[0];
       tkp = bracket[1];
 
     }
 
     // Get solutions at tk and tkp
-    vector<Vec3D> &Sk  = proxi_solutions[i]->GetSolutionAtTime(tk);
-    vector<Vec3D> &Skp = proxi_solutions[i]->GetSolutionAtTime(tkp);
-    vector<Vec3D> &S   = proxi_forces[i];
+    vector<Vec3D> &Sk  = neighbor_solutions[i]->GetSolutionAtTime(tk);
+    vector<Vec3D> &Skp = neighbor_solutions[i]->GetSolutionAtTime(tkp);
+    vector<Vec3D> &S   = neighbor_forces[i];
 
-    npo->ProjectToTargetSurface(surface, proxi_surfaces[i], Sk);
-    npo->ProjectToTargetSurface(surface, proxi_surfaces[i], Skp);
+    npo->ProjectToTargetSurface(surface, neighbor_surfaces[i], Sk);
+    npo->ProjectToTargetSurface(surface, neighbor_surfaces[i], Skp);
     InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t, 
                       (double*)S.data(), 3*active_nodes);
 
   }
 
-  InterpolateInMetaSpace(surface, proxi_forces, force, force_over_area);
+  InterpolateInMetaSpace(surface, neighbor_forces, force, force_over_area);
 
 
 }
@@ -162,15 +166,15 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
   int active_nodes = surface.active_nodes;
   int num_points   = iod_meta.numPoints;
 
-  // Get parameters for target and proximal points --- sorted by distance.
-  vector<double> &targ              = file_handler.GetParametersForTarget();
-  std::vector<vector<double>> &prox = file_handler.GetParametersForAllProxim();
+  // Get parameters for target and neighbor points --- sorted by distance.
+  vector<double> targ                  = file_handler.GetParametersForTarget();
+  std::vector<vector<double>> neighbor = file_handler.GetParametersForAllNeighbors();
 
   int var_dim = targ.size();
   double rmin = 0, rmax = 0;
   for(int i=0; i<var_dim; ++i) {
-    rmin += (prox[           0][i] - targ[i])*(prox[           0][i] - targ[i]);
-    rmax += (prox[num_points-1][i] - targ[i])*(prox[num_points-1][i] - targ[i]);
+    rmin += (neighbor[           0][i] - targ[i])*(neighbor[           0][i] - targ[i]);
+    rmax += (neighbor[num_points-1][i] - targ[i])*(neighbor[num_points-1][i] - targ[i]);
   }
 
   rmin = std::sqrt(rmin);
@@ -233,7 +237,7 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
     double xd[var_dim*num_points];
     for(int i=0; i<num_points; ++i)
       for(int j=0; j<var_dim; ++j)
-        xd[var_dim*i + j] = prox[i][j];
+        xd[var_dim*i + j] = neighbor[i][j];
 
 
     double r0; //smaller than maximum separation, larger than typical separation

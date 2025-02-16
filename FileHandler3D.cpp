@@ -34,36 +34,92 @@ FileHandler3D::FileHandler3D(MetaInputData& meta_, MPI_Comm& comm_)
 
 //------------------------------------------------------------
 
-string& FileHandler3D::GetMeshFileForProxim(int id)
+string FileHandler3D::GetMeshFileForTarget()
 {
-  int num_points = iod_meta.numPoints;
-  assert(id >= 0 and id < num_points);
-  assert(!surface_files.empty());
+  assert(!points[TARGET].empty());
+  string full_name = points[TARGET][0].GetPointDirectory() + 
+                     points[TARGET][0].GetPointSurfaceFile();
 
-  return surface_files[id];
+  return full_name;
 }
 
 //------------------------------------------------------------
 
-string& FileHandler3D::GetSolnFileForProxim(int id)
+string FileHandler3D::GetSolnFileForTarget()
 {
-  int num_points = iod_meta.numPoints;
-  assert(id >= 0 and id < num_points);
-  assert(!solution_files.empty());
+  assert(!points[TARGET].empty());
+  string full_name = points[TARGET][0].GetPointDirectory() + 
+                     points[TARGET][0].GetPointSolutionFile();
 
-  return solution_files[id];
+  return full_name;
 }
 
 //------------------------------------------------------------
 
-vector<double>&
-FileHandler3D::GetParametersForProxim(int id)
+vector<double>
+FileHandler3D::GetParametersForTarget()
 {
-  int num_points = iod_meta.numPoints;
-  assert(id >= 0 and id < num_points);
-  assert(!associates.empty());
+  assert(!points[TARGET].empty());
+  return points[TARGET][0].GetPointParameters();
+}
 
-  return associates[id];
+//------------------------------------------------------------
+
+string FileHandler3D::GetMeshFileForNeighbor(int id)
+{
+  assert(id >= 0 and id < iod_meta.numPoints);
+  assert(!points[NEIGHBOR].empty());
+
+  string full_name = points[NEIGHBOR][id].GetPointDirectory() +
+                     points[NEIGHBOR][id].GetPointSurfaceFile();
+
+  return full_name;
+}
+
+//------------------------------------------------------------
+
+string FileHandler3D::GetSolnFileForNeighbor(int id)
+{
+  assert(id >= 0 and id < iod_meta.numPoints);
+  assert(!points[NEIGHBOR].empty());
+
+  string full_name = points[NEIGHBOR][id].GetPointDirectory() +
+                     points[NEIGHBOR][id].GetPointSolutionFile();
+
+  return full_name;
+}
+
+//------------------------------------------------------------
+
+vector<double>
+FileHandler3D::GetParametersForNeighbor(int id)
+{
+  assert(id >= 0 and id < iod_meta.numPoints);
+  assert(!points[NEIGHBOR].empty());
+
+  return points[NEIGHBOR][id].GetPointParameters();
+}
+
+//------------------------------------------------------------
+
+vector<vector<double>>
+FileHandler3D::GetParametersForAllNeighbors()
+{
+  assert(!points[NEIGHBOR].empty());
+ 
+  int size = (int)points[NEIGHBOR].size();
+  int dim  = points[NEIGHBOR][0].GetDim();
+
+  vector<vector<double>> param(size, vector<double>(dim, 0.0));
+
+  for(int i=0; i<size; ++i) {
+    const auto &current = points[NEIGHBOR][i].GetPointParameters();
+    for(int j=0; j<dim; ++j)
+      param[i][j] = current[j];
+  }
+
+  return param; // these are small vectors; ok to return copies
+
 }
 
 //------------------------------------------------------------
@@ -97,6 +153,12 @@ FileHandler3D::ReadMetaFile()
   int column = 0;
   for(;iss>>word;) {
     // just check the first four letters
+    if(!(word.compare(0, 4, "Type", 0, 4) and
+         word.compare(0, 4, "TYPE", 0, 4) and
+	 word.compare(0, 4, "type", 0, 4))) {
+      field2col[TYPE] = column;
+      column += 1;
+    }
     if(!(word.compare(0, 4, "Directory", 0, 4) and
          word.compare(0, 4, "DIRECTORY", 0, 4) and
 	 word.compare(0, 4, "directory", 0, 4))) {
@@ -141,74 +203,91 @@ FileHandler3D::ReadMetaFile()
   }
 
   //Line #3 (and onwards) - directory, meshfile, solutionfile, parameter#1, ..., parameter#N
-  vector<string>    surf_files;
-  vector<string>    soln_files;
-  vector<vector<double>> parameters;
-
-  int target_index = 0;
-  int index = 0;
+  int num_targets = 0;
   while(getline(input, line)) {
     std::istringstream is(line);
-    string directory, mesh, soln;
+    string type, directory, mesh, soln;
 
-    is >> directory >> mesh >> soln;
-
-    // check if this is the current parameter
-    if(!(directory.compare(0, 4, "Target", 0, 4) and
-         directory.compare(0, 4, "TARGET", 0, 4) and
-	 directory.compare(0, 4, "target", 0, 4) and
-         mesh.compare(0, 4, "Target", 0, 4) and
-         mesh.compare(0, 4, "TARGET", 0, 4) and
-	 mesh.compare(0, 4, "target", 0, 4) and
-         soln.compare(0, 4, "Target", 0, 4) and
-         soln.compare(0, 4, "TARGET", 0, 4) and
-	 soln.compare(0, 4, "target", 0, 4))) {
-      target_index = index;
-    }
+    is >> type >> directory >> mesh >> soln;
 
     // read parameters
     double value;
-    vector<double> data;
-    while(is >> value) data.push_back(value);
+    vector<double> param;
+    while(is >> value) param.push_back(value);
 
-    // contains target as well
-    parameters.push_back(data);
-    surf_files.push_back(directory + mesh);
-    soln_files.push_back(directory + soln);
+    // create a new meta-point
+    MetaPoint current;
+    current.SetPointDirectory(directory);
+    current.SetPointSurfaceFile(mesh);
+    current.SetPointSolutionFile(soln);
+    current.SetPointParameters(param.data(), param.size());
 
-    index++;
+    // store based on the point type
+    if(!(type.compare(0, 4, "Target", 0, 4) and
+         type.compare(0, 4, "TARGET", 0, 4) and
+         type.compare(0, 4, "target", 0, 4))) {
+  
+      if(num_targets == 1) {
+        print_warning("- Warning: Multiple target meta points found in the meta file. "
+                      "Using the first one and ignoring rest.\n");
+	continue;
+      }
+
+      points[TARGET].resize(0); // remove previous data (if any)
+      points[TARGET].push_back(current);
+      num_targets++;
+
+    }
+    else if(!(type.compare(0, 4, "Neighbor", 0, 4) and
+              type.compare(0, 4, "NEIGHBOR", 0, 4) and
+              type.compare(0, 4, "neighbor", 0, 4))) {
+
+      points[NEIGHBOR].push_back(current);
+
+    }
+    else {
+
+      print_error("*** Error: I do not understand type \"%s\".\n", type);
+      exit_mpi();
+
+    }
   }
 
-  if(!target_index) {
+  if(points[TARGET].empty()) {
     print_error("*** Error: Did not find the target's parameters.\n");
     exit_mpi();
   }
 
-  if(iod_meta.numPoints != (int)parameters.size()-1) {
+  if(iod_meta.numPoints != (int)points[NEIGHBOR].size()) {
     print_warning("- Warning: The number of interpolation points specified in "
                   "the input file is %d. However, only %d points are provided in "
 		  "the metafile. Using %d points for interpolation instead.\n",
-		  iod_meta.numPoints, parameters.size()-1, parameters.size()-1);
-    iod_meta.numPoints = parameters.size()-1;
+		  iod_meta.numPoints, points[NEIGHBOR].size(), points[NEIGHBOR].size());
+    iod_meta.numPoints = points[NEIGHBOR].size();
   }
 
   // check the size of each parameter
-  target = parameters[target_index];
-  int dim = target.size();
-  for(int i=0; i<iod_meta.numPoints+1; ++i)
-    if(dim != (int)parameters[i].size()) {
-      print_error("*** Error: The dimension of parameter %d does not match the rest.\n",
-                  i+1);
-      exit_mpi();
+  int dim = points[TARGET][0].GetDim();
+  int error = 0;
+  for(int i=0; i<(int)points[NEIGHBOR].size(); ++i)
+    if(dim != points[NEIGHBOR][i].GetDim()) {
+      print_error("*** Error: Parameter dimension of \"%s\" does not match the target parameters.\n",
+                  points[NEIGHBOR][i].GetPointDirectory().c_str());
+      error++;
     }
+
+  if(error>0) exit_mpi();
 
   // sort the parameters based on distance from target parameter.
   vector<pair<double, int>> dist2target;
-  for(int i=0; i<iod_meta.numPoints+1; ++i) {
+  for(int i=0; i<(int)points[NEIGHBOR].size(); ++i) {
  
+    const auto &current = points[NEIGHBOR][i].GetPointParameters();
+    const auto &target  = points[TARGET][0].GetPointParameters();
+
     double dist = 0;
     for(int d=0; d<dim; ++d) 
-      dist += (parameters[i][d] - target[d])*(parameters[i][d] - target[d]);
+      dist += (current[d] - target[d])*(current[d] - target[d]);
     
     dist2target.push_back(std::make_pair(dist, i));
 
@@ -217,31 +296,20 @@ FileHandler3D::ReadMetaFile()
   sort(dist2target.begin(), dist2target.end());
 
   // store the other points
-  associates.resize(iod_meta.numPoints, vector<double>(dim, 0.0));
-  surface_files.resize(iod_meta.numPoints, "");
-  solution_files.resize(iod_meta.numPoints, "");
+  vector<MetaPoint> sorted_points(points[NEIGHBOR].size());
+  for(int i=0; i<(int)points[NEIGHBOR].size(); ++i)
+    sorted_points[i] = points[NEIGHBOR][dist2target[i].second];
 
-  index = 0;
-  std::vector<double> distances(iod_meta.numPoints, -1);
-  for(int i=0; i<iod_meta.numPoints+1; ++i) {
-
-    if(dist2target[i].first == 0) continue; // skip target
-
-    associates[index]     = parameters[dist2target[i].second];
-    surface_files[index]  = surf_files[dist2target[i].second];
-    solution_files[index] = soln_files[dist2target[i].second];
-    distances[index]      = std::sqrt(dist2target[i].first); // mainly for log purpose.
-    index++;
-
-  }
+  // set stored points to sorted points
+  points[NEIGHBOR] = std::move(sorted_points);    
 
   if(verbose>0) {
     print("- Interpolating from parameters:\n");
     for(int i=0; i<iod_meta.numPoints; ++i) {
       print("  o Parameter %d:", i);
-      for(int j=0; j<(int)associates[i].size(); ++j)
-        print("  %e", associates[i][j]);
-      print(" (r = %e)\n", distances[i]);
+      const auto &current = points[NEIGHBOR][i].GetPointParameters();
+      for(int j=0; j<dim; ++j)
+        print("  %e", current[j]);
     }
     print("\n");
   }

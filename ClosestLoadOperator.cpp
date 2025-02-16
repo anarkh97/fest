@@ -30,8 +30,8 @@ void ClosestLoadOperator::LoadExistingSurfaces()
 
   if(!npo->NeedSurface()) return;
   
-  closest_surface    = new TriangulatedSurface();
-  string &filename   = file_handler.GetMeshFileForProxim(0);
+  closest_surface = new TriangulatedSurface();
+  string filename = file_handler.GetMeshFileForNeighbor(0);
   file_handler.ReadMeshFile(filename, closest_surface->X,
                             closest_surface->elems);
   
@@ -46,8 +46,8 @@ void ClosestLoadOperator::LoadExistingSurfaces()
 void ClosestLoadOperator::LoadExistingSolutions()
 {
 
-  closest_solution   = new SolutionData3D();
-  string &filename   = file_handler.GetSolnFileForProxim(0);
+  closest_solution = new SolutionData3D();
+  string filename  = file_handler.GetSolnFileForNeighbor(0);
   file_handler.ReadSolutionFile(filename, *closest_solution);
 
 }
