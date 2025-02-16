@@ -185,7 +185,7 @@ FileHandler3D::ReadMetaFile()
   }
 
   if(iod_meta.numPoints != (int)parameters.size()-1) {
-    print_warning("*** Warning: The number of interpolation points specified in "
+    print_warning("- Warning: The number of interpolation points specified in "
                   "the input file is %d. However, only %d points are provided in "
 		  "the metafile. Using %d points for interpolation instead.\n",
 		  iod_meta.numPoints, parameters.size()-1, parameters.size()-1);
@@ -235,7 +235,7 @@ FileHandler3D::ReadMetaFile()
 
   }
 
-  if(verbose>1) {
+  if(verbose>0) {
     print("- Interpolating from parameters:\n");
     for(int i=0; i<iod_meta.numPoints; ++i) {
       print("  o Parameter %d:", i);
@@ -260,7 +260,7 @@ FileHandler3D::ReadMeshFile(string &filename, vector<Vec3D> &Xs, vector<Int3> &E
   if(loc>=fname.size()-1) {//assume the default format (top) if file extension not detected
     
     if(verbose>1)
-      print_warning("*** Warning: Mesh file does not have a file extension. Assuming file is "
+      print_warning("- Warning: Mesh file does not have a file extension. Assuming file is "
                     "written in top format.\n");
 
     ReadMeshFileInTopFormat(filename, Xs, Es); 
@@ -393,7 +393,7 @@ FileHandler3D::ReadMeshFileInTopFormat(string &filename, vector<Vec3D> &Xs, vect
   Xs.resize(nNodes);
   int id(-1);
   if(nNodes != maxNode) { // need to renumber nodes, i.e. create "old2new"
-    print_warning("Warning: The node indices of an embedded surface may have a gap: "
+    print_warning("- Warning: The node indices of an embedded surface may have a gap: "
                   "max index = %d, number of nodes = %d. Renumbering nodes. (%s)\n",
                   maxNode, nNodes, filename);
 //    assert(nNodes < maxNode);
@@ -483,7 +483,7 @@ FileHandler3D::ReadMeshFileInTopFormat(string &filename, vector<Vec3D> &Xs, vect
   int nElems = elemList.size();
   Es.resize(nElems);
   if(nElems != maxElem) { // need to renumber elements.
-    print_warning("Warning: The element indices of an embedded surface may have a gap: "
+    print_warning("- Warning: The element indices of an embedded surface may have a gap: "
                   "max index = %d, number of elements = %d. Renumbering elements. (%s)\n",
                   maxElem, nElems, filename);
 //    assert(nElems < maxElem);

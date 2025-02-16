@@ -203,6 +203,21 @@ struct DynamicLoadCalculatorData {
 
 //------------------------------------------------------------------------------
 
+struct TsData {
+
+  int maxIts;
+  double timestep;
+  double maxTime;
+
+  TsData();
+  ~TsData() {}
+
+  void setup(const char *, ClassAssigner * = 0);
+
+};
+
+//------------------------------------------------------------------------------
+
 class IoData {
 
   char *cmdFileName;
@@ -215,6 +230,8 @@ public:
   DynamicLoadCalculatorData calculator;
 
   LagrangianMeshOutputData output;
+
+  TsData ts;
 
 public:
 

@@ -262,6 +262,30 @@ void DynamicLoadCalculatorData::setup(const char *name, ClassAssigner *father)
 
 //------------------------------------------------------------------------------
 
+TsData::TsData()
+{
+
+  maxIts = INT_MAX;
+  timestep = -1.0;
+  maxTime = 1e10;
+
+}
+
+//------------------------------------------------------------------------------
+
+void TsData::setup(const char *name, ClassAssigner *father)
+{
+
+  ClassAssigner *ca = new ClassAssigner(name, 3, father);
+
+  new ClassInt<TsData>(ca, "MaxIts", this, &TsData::maxIts);
+  new ClassDouble<TsData>(ca, "TimeStep", this, &TsData::timestep);
+  new ClassDouble<TsData>(ca, "MaxTime", this, &TsData::maxTime);
+
+}
+
+//------------------------------------------------------------------------------
+
 IoData::IoData(int argc, char** argv)
 {
   //Should NOT call functions in Utils (e.g., print(), exit_mpi()) because the
@@ -321,6 +345,7 @@ void IoData::setupCmdFileVariables()
   concurrent.setup("ConcurrentPrograms");
   calculator.setup("DynamicsCalculator");
   output.setup("Output");
+  ts.setup("Time");
 
 }
 

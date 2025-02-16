@@ -40,7 +40,7 @@ DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_,
       break;
     }
     case DynamicLoadCalculatorData::NONE : {
-      print_warning("*** Warning: The Dynamic calculator type was not specified. "
+      print_warning("- Warning: The Dynamic calculator type was not specified. "
                     "Assuming constant pressure calculator.\n");
       dlo = new ConstantLoadOperator(iod, comm);
       break;
@@ -101,9 +101,17 @@ void DynamicLoadDriver::Run()
   ComputeForces(surface, force, force_over_area.get(), t);
   lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), true);
 
-  concurrent.CommunicateBeforeTimeStepping();
-  dt   = concurrent.GetTimeStepSize();
-  tmax = concurrent.GetMaxTime();
+  if(concurrent.Coupled())
+    concurrent.CommunicateBeforeTimeStepping();
+
+  if(concurrent.Coupled()) {
+    dt   = concurrent.GetTimeStepSize();
+    tmax = concurrent.GetMaxTime();
+  }
+  else {
+    dt   = iod.ts.timestep;
+    tmax = iod.ts.maxTime;
+  }
   
   while(t<tmax) {
 
@@ -121,20 +129,25 @@ void DynamicLoadDriver::Run()
  
     ComputeForces(surface, force, force_over_area.get(), t); 
 
-    if(t<tmax) {
-      if(time_step==1)
-        concurrent.FirstExchange();
-      else
-        concurrent.Exchange();
-    } 
+    if(concurrent.Coupled()) {
 
-    dt   = concurrent.GetTimeStepSize();
-    tmax = concurrent.GetMaxTime(); //set to a small number at final time-step
+      if(t<tmax) {
+        if(time_step==1)
+          concurrent.FirstExchange();
+        else
+          concurrent.Exchange();
+      } 
+
+      dt   = concurrent.GetTimeStepSize();
+      tmax = concurrent.GetMaxTime(); //set to a small number at final time-step
+
+    }
 
     lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), false);
   }
 
-  concurrent.FinalExchange();
+  if(concurrent.Coupled())
+    concurrent.FinalExchange();
 
   lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area.get(), true);
 
