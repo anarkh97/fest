@@ -18,6 +18,18 @@ extern int verbose;
 
 //------------------------------------------------------------
 
+void GetUnquotedString(string &str)
+{
+
+  size_t start = str.find('"');
+  size_t end   = str.rfind('"');
+
+  str = str.substr(start+1, end-start-1);
+
+}
+
+//------------------------------------------------------------
+
 FileHandler3D::FileHandler3D(MetaInputData& meta_, MPI_Comm& comm_)
                 : iod_meta(meta_), comm(comm_)
 {
@@ -159,9 +171,9 @@ FileHandler3D::ReadMetaFile()
       field2col[TYPE] = column;
       column += 1;
     }
-    if(!(word.compare(0, 4, "Directory", 0, 4) and
-         word.compare(0, 4, "DIRECTORY", 0, 4) and
-	 word.compare(0, 4, "directory", 0, 4))) {
+    else if(!(word.compare(0, 4, "Directory", 0, 4) and
+              word.compare(0, 4, "DIRECTORY", 0, 4) and
+	      word.compare(0, 4, "directory", 0, 4))) {
       field2col[DIRECTORY] = column;
       column += 1;
     }
@@ -196,9 +208,9 @@ FileHandler3D::ReadMetaFile()
     }
   }
 
-  if(field2col[DIRECTORY] != 0 or field2col[MESH_FILE] != 1 or field2col[SOLUTION_FILE] != 2) {
+  if(field2col[DIRECTORY] != 1 or field2col[MESH_FILE] != 2 or field2col[SOLUTION_FILE] != 3) {
     print_error("*** Error: Metafile field not in expected order which is,\n"
-                "Directory  Mesh  Solution  Parameters\n");
+                "Type Directory  Mesh  Solution  Parameters\n");
     exit_mpi();
   }
 
@@ -209,6 +221,10 @@ FileHandler3D::ReadMetaFile()
     string type, directory, mesh, soln;
 
     is >> type >> directory >> mesh >> soln;
+
+    GetUnquotedString(directory);
+    GetUnquotedString(mesh);
+    GetUnquotedString(soln);
 
     // read parameters
     double value;
@@ -639,10 +655,6 @@ FileHandler3D::ReadSolutionFile(string &filename, SolutionData3D &S)
     soln_rows       = S.GetRows();
     soln_total_size = S.GetSize();
 
-    soln.resize(soln_total_size);
-    // this process copies the data in
-    S.Flatten(soln);
-
   }
 
   // broadcast sizes to all ranks
@@ -650,25 +662,25 @@ FileHandler3D::ReadSolutionFile(string &filename, SolutionData3D &S)
   MPI_Bcast(&soln_total_size, 1, MPI_INT, 0, comm);
 
   // prepare to recieve read data on ranks other than root
-  if(mpi_rank != 0)
-    soln.resize(soln_total_size);
+  soln.resize(soln_total_size, 0.0);
+  if(mpi_rank == 0)
+    S.Flatten(soln); // creates copies, could be improved in future.
 
-  // broadcast the data vector to all ranks
   MPI_Bcast(soln.data(), soln_total_size, MPI_DOUBLE, 0, comm);
 
   // rebuild SolutionData3D on ranks other than root
   if(mpi_rank != 0)
     S.Rebuild(soln, soln_rows);
 
-  /*
-  if(mpi_rank == 0) {
+/*
+  if(mpi_rank == 1) {
     auto &stored = S.GetSolutionAtTime(0.0);
     for(auto &vec : stored) {
       fprintf(stdout, "%e  %e  %e\n", vec[0], vec[1], vec[2]);
     }
     exit_mpi();
   }
-  */
+*/
 
   MPI_Barrier(comm);
 

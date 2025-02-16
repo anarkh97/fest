@@ -46,6 +46,10 @@ DynamicLoadOperator::DynamicLoadOperator(IoData &iod_, MPI_Comm &comm_)
 
     true_solution   = new SolutionData3D();
     string filename = file_handler.GetSolnFileForTarget();
+
+    if(verbose>1) 
+      print("- Reading true solution from \"%s\"\n", filename.c_str());
+    
     file_handler.ReadSolutionFile(filename, *true_solution);
 
   } 
@@ -60,6 +64,25 @@ void DynamicLoadOperator::Destroy()
     npo->Destroy();
     delete npo;
   }
+}
+
+//------------------------------------------------------------
+
+void
+DynamicLoadOperator::InitializeSurface(TriangulatedSurface *surf)
+{
+
+  assert(surf); // can not be null
+
+  string filename = file_handler.GetMeshFileForTarget();
+  file_handler.ReadMeshFile(filename, surf->X, surf->elems);
+
+  surf->X0           = surf->X;
+  surf->active_nodes = surf->X.size();
+  surf->active_elems = surf->elems.size();
+  surf->BuildConnectivities();
+  surf->CalculateNormalsAndAreas();
+
 }
 
 //------------------------------------------------------------
@@ -100,44 +123,24 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
   InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t,
                     (double*)S.data(), 3*active_nodes);
 
-  int mpi_rank, mpi_size;
-  MPI_Comm_rank(comm, &mpi_rank);
-  MPI_Comm_size(comm, &mpi_size);
-  int nodes_per_rank = active_nodes / mpi_size;
-  int remainder      = active_nodes - nodes_per_rank*mpi_size;
-
-  assert(remainder >=0 and remainder < mpi_size);
-
-  vector<int> counts(mpi_size, -1);
-  vector<int> start_index(mpi_size, -1);
-
-  for(int i=0; i<mpi_size; ++i) {
-    counts[i]      = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
-    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i;
-  }
-
-  assert(start_index.back() + counts.back() == active_nodes);
-
-  int my_block_size  = counts[mpi_rank];
-  int my_start_index = start_index[mpi_rank];
+/*
+  for(int i=0; i<active_nodes; ++i)
+    print("%e  %e  %e\n", S[i][0], S[i][1], S[i][2]);
+*/
 
   double mse = 0.0;
-  for(int index=my_start_index; index<my_block_size; ++index) {
+  for(int index=0; index<active_nodes; ++index) {
 
-    double diff  = (S[index] - force_over_area[index]).norm();
-    mse         += diff*diff;
+    // add small value to avoid division by zero
+    double reference_value = force_over_area[index].norm() + 1e-6;
+    double computed_value  = S[index].norm() + 1e-6; 
+
+    double relerr = (1 - computed_value/reference_value);
+    mse += (relerr*relerr)/active_nodes;
 
   }
 
-  mse /= active_nodes;
-
-  // communication
-  double error = 0.0;
-
-  // sum error from all ranks.
-  MPI_Reduce(&mse, &error, 1, MPI_DOUBLE, MPI_SUM, 0, comm);
-
-  return error;
+  return mse;
 
 }
 

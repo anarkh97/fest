@@ -42,6 +42,10 @@ public:
   DynamicLoadOperator(IoData& iod_, MPI_Comm& comm);
   ~DynamicLoadOperator() { }
 
+  //! target point's surface. Only used when FEST is
+  //! called in stand-alone mode.
+  void InitializeSurface(TriangulatedSurface *surface);
+
   virtual void LoadExistingSurfaces() = 0;
   virtual void LoadExistingSolutions() = 0;
 

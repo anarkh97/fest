@@ -82,7 +82,8 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
 
   // compute forces
   Vec3D normalz(0.0, 0.0, 1.0);
-  for(int index=my_start_index; index<my_node_size; ++index) {
+  int index = my_start_index;
+  for(int i=0; i<my_node_size; ++i) {
 
     // elements associated with this node
     auto elems = surface.node2elem[index];
@@ -95,6 +96,7 @@ ConstantLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Ve
 
     force_over_area[index] = 1e6*normalz;
 
+    index++;
   }
 
   // communication

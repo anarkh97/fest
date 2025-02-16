@@ -5,7 +5,7 @@
 
 SolutionData3D::SolutionData3D()
 {
-  data_ptr      = std::make_shared<std::map<double, std::vector<Vec3D>>>();
+  data_ptr      = nullptr;
   num_stamps    = -1;
   num_data_rows = -1;
 }
@@ -30,6 +30,21 @@ SolutionData3D::~SolutionData3D()
 
 //------------------------------------------------------------
 
+bool SolutionData3D::CheckSizes()
+{
+
+  assert(data_ptr); // cannot be null
+
+  int first_size = data_ptr->begin()->second.size();
+  for(const auto &snaps : *data_ptr)
+    if(snaps.second.size() != first_size) return false;
+
+  return true;
+
+}
+
+//------------------------------------------------------------
+
 //! Takes ownership of the input map. It will be destroyed in the
 //! calling function.
 void
@@ -37,6 +52,11 @@ SolutionData3D::MoveMap(std::map<double, std::vector<Vec3D>> &&input_map)
 {
   data_ptr       = std::make_shared<std::map<double, std::vector<Vec3D>>>(
                      std::move(input_map));
+  if(!CheckSizes()) {
+    print_error("*** Error: Solution snapshots must contain the same number of "
+                "rows.\n");
+    exit_mpi();
+  }
   num_stamps     = data_ptr->size();
   num_data_rows  = data_ptr->begin()->second.size();
 }
@@ -97,7 +117,17 @@ void
 SolutionData3D::Insert(double time, std::vector<Vec3D> &&data)
 {
 
+  if(!data_ptr)
+    data_ptr = std::make_shared<std::map<double, std::vector<Vec3D>>>();
+
   (*data_ptr)[time] = std::move(data);
+
+  if(!CheckSizes()) {
+    print_error("*** Error: Solution snapshots must contain the same number of "
+                "rows.\n");
+    exit_mpi();
+  }
+
   num_stamps        = (int)data_ptr->size();
   num_data_rows     = (int)data_ptr->begin()->second.size();
 
@@ -109,7 +139,12 @@ std::vector<Vec3D>&
 SolutionData3D::GetSolutionAtTime(double t)
 {
   assert(data_ptr); // should not be null
-  return data_ptr->at(t); // will throw an error if not found.
+  try {
+    return data_ptr->at(t); // will throw an error if not found.
+  } catch (std::out_of_range &e) {
+    print_error("*** Error: Time stamp for t = %e not found.\n", t);
+    exit_mpi();
+  }
 }
 
 //------------------------------------------------------------
@@ -122,13 +157,16 @@ SolutionData3D::Flatten(std::vector<double> &flat)
 
   int container_size = GetSize();
   if(flat.empty())
-    flat.resize(container_size);
+    flat.resize(container_size, 0.0);
   
   // additional check
   assert((int)flat.size() == container_size);
    
   int index = 0;
-  for(const auto& [time, data] : *data_ptr) {
+  for(const auto& snaps : *data_ptr) {
+
+    const double &time             = snaps.first;
+    const std::vector<Vec3D> &data = snaps.second;
 
     // might not be needed.
     assert(index < container_size);
@@ -139,14 +177,13 @@ SolutionData3D::Flatten(std::vector<double> &flat)
 
     // store Vec3D data
     for(const auto& vec : data) {
-      flat[index]   = vec[0];
-      flat[index+1] = vec[1];
-      flat[index+2] = vec[2];
-
-      index += 3;
+      for(int i=0; i<3; ++i) {
+        flat[index] = vec[i];
+	index++;
+      }
     }
     
-    //fprintf(stdout, "time = %e, soln size = %d, stamps = %d  ", time, (int)data.size(), num_stamps);
+    //fprintf(stdout, "time = %e, soln size = %d, stamps = %d\n", time, (int)data.size(), num_stamps);
     //fprintf(stdout, "index: %d, rows: %d, size: %d.\n", index, GetRows(), container_size);
 
   }
@@ -166,26 +203,31 @@ SolutionData3D::Rebuild(const std::vector<double> &other, int rows)
 
   int size = other.size();
   
-  for(int i=0; i<size; ++i) {
+  for(int index=0; index<size;) {
 
     double time;
     std::vector<Vec3D> data(rows, Vec3D(0.0));
 
-    time = other[i];
-    i++;
+    time = other[index];
+    index++;
 
-    for(int j=0; j<rows; ++j) {
-    
-      data[j] = other[i];
-      data[j] = other[i+1];
-      data[j] = other[i+2];
-
-      i += 3;
-
+    for(int i=0; i<rows; ++i) {
+      for(int d=0; d<3; ++d) {
+        data[i][d] = other[index];
+	index++;
+      }
     }
+
+    //fprintf(stdout, "time = %e, soln size = %d, index = %d\n", time, (int)data.size(), index);
 
     (*data_ptr)[time] = std::move(data);
 
+  }
+
+  if(!CheckSizes()) {
+    print_error("*** Error: Solution snapshots must contain the same number of "
+                "rows.\n");
+    exit_mpi();
   }
 
   num_stamps    = data_ptr->size();

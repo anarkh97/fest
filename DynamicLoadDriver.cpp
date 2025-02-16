@@ -68,11 +68,18 @@ void DynamicLoadDriver::Run()
   vector<Vec3D>             force_over_area;
 
   // This will populate the surface object from Aero-S.
-  concurrent.InitializeMessengers(&surface, &force);
+  if(concurrent.Coupled())
+    concurrent.InitializeMessengers(&surface, &force);
+  else {
+    dlo->InitializeSurface(&surface);
+    force.assign(surface.active_nodes, Vec3D(0.0));
+  }
+
+  // Resize force over area
+  force_over_area.assign(surface.active_nodes, Vec3D(0.0));
 
   // All meta-level setup, such as nearest neighbor weights and surface maps,
   // will be computed here, before time stepping.
-  assert(dlo); // cannot be null.
   dlo->LoadExistingSurfaces();
   dlo->LoadExistingSolutions();
   dlo->SetupProjectionMap(surface);
@@ -149,10 +156,10 @@ void DynamicLoadDriver::Run()
   print("\033[0;32m==========================================\033[0m\n");
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
-  print("Total Mean Squared Error    : %f \n", error/time_step);
-  print("Total File I/O Overhead Time: %f sec.\n", overhead_time - start_time);
-  print("Total Time For Integration  : %f sec.\n", walltime()    - overhead_time);
-  print("Total Computation Time      : %f sec.\n", walltime()    - start_time);
+  print("Total Mean Squared Error     : %e \n", error/time_step);
+  print("Total File I/O Overhead Time : %f sec.\n", overhead_time - start_time);
+  print("Total Time For Integration   : %f sec.\n", walltime()    - overhead_time);
+  print("Total Computation Time       : %f sec.\n", walltime()    - start_time);
   print("\n");
 
 }

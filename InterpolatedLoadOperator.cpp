@@ -54,7 +54,9 @@ void InterpolatedLoadOperator::LoadExistingSurfaces()
     file_handler.ReadMeshFile(filename, neighbor_surfaces[i]->X, 
                               neighbor_surfaces[i]->elems);
 
-    neighbor_surfaces[i]->X0 = neighbor_surfaces[i]->X;
+    neighbor_surfaces[i]->X0           = neighbor_surfaces[i]->X;
+    neighbor_surfaces[i]->active_nodes = neighbor_surfaces[i]->X.size();
+    neighbor_surfaces[i]->X0           = neighbor_surfaces[i]->X;
     neighbor_surfaces[i]->BuildConnectivities();
     neighbor_surfaces[i]->CalculateNormalsAndAreas();
 
@@ -152,7 +154,6 @@ InterpolatedLoadOperator::ComputeForces(TriangulatedSurface &surface, std::vecto
 
   InterpolateInMetaSpace(surface, neighbor_forces, force, force_over_area);
 
-
 }
 
 //------------------------------------------------------------
@@ -192,7 +193,7 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
 
   for(int i=0; i<mpi_size; ++i) {
     counts[i]      = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
-    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i;
+    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i + remainder;
   }
 
   assert(start_index.back() + counts.back() == active_nodes);
@@ -218,7 +219,8 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
   }
 
   // compute forces
-  for(int index=my_start_index; index<my_block_size; ++index) {
+  int index = my_start_index;
+  for(int iter=0; iter<my_block_size; ++iter) {
 
     // calculate nodal area and current normal.
     Vec3D patch(0.0);
@@ -257,6 +259,8 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
 
     force[index]           = interp[0]*area*normal;   
     force_over_area[index] = interp[0]*normal;
+
+    index++;
 
   }	  
 

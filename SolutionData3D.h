@@ -52,6 +52,10 @@ public:
   void Flatten(std::vector<double> &flat); 
   /*SolutionData3D&*/ void Rebuild(const std::vector<double> &other, int num_rows);
 
+private:
+
+  bool CheckSizes();
+
 };
 
 #endif

@@ -35,7 +35,9 @@ void ClosestLoadOperator::LoadExistingSurfaces()
   file_handler.ReadMeshFile(filename, closest_surface->X,
                             closest_surface->elems);
   
-  closest_surface->X0 = closest_surface->X;
+  closest_surface->X0           = closest_surface->X;
+  closest_surface->active_nodes = closest_surface->X.size();
+  closest_surface->X0           = closest_surface->X;
   closest_surface->BuildConnectivities();
   closest_surface->CalculateNormalsAndAreas();  
 
@@ -127,7 +129,7 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
 
   for(int i=0; i<mpi_size; ++i) {
     counts[i]      = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
-    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i;
+    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i + remainder;
   }
 
   assert(start_index.back() + counts.back() == active_nodes);
@@ -135,7 +137,8 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
   int my_block_size  = counts[mpi_rank];
   int my_start_index = start_index[mpi_rank];
 
-  for(int index=my_start_index; index<my_block_size; ++index) {
+  int index = my_start_index;
+  for(int i=0; i<my_block_size; ++i) {
 
     // get current area and normal
     Vec3D patch(0.0);
@@ -154,6 +157,8 @@ ClosestLoadOperator::ComputeForces(TriangulatedSurface& surface, std::vector<Vec
 
     force[index]           = pressure*area*normal;
     force_over_area[index] = pressure*normal; 
+
+    index++;
 
   }
 
