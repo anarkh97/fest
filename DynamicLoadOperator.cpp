@@ -128,19 +128,24 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
     print("%e  %e  %e\n", S[i][0], S[i][1], S[i][2]);
 */
 
-  double mse = 0.0;
+  //! Calculate Normalized root mean squared error.
+  double numerator   = 0.0;
+  double denominator = 0.0; 
   for(int index=0; index<active_nodes; ++index) {
 
     // add small value to avoid division by zero
     double reference_value = force_over_area[index].norm() + 1e-6;
     double computed_value  = S[index].norm() + 1e-6; 
 
-    double relerr = (1 - computed_value/reference_value);
-    mse += (relerr*relerr)/active_nodes;
+    double relerr = (reference_value - computed_value);
+    numerator   += (relerr*relerr);
+    denominator += (reference_value*reference_value);
 
   }
 
-  return mse;
+  double nrmse = std::sqrt(numerator / denominator);
+
+  return nrmse;
 
 }
 

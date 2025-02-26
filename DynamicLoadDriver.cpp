@@ -82,7 +82,7 @@ void DynamicLoadDriver::Run()
   // will be computed here, before time stepping.
   dlo->LoadExistingSurfaces();
   dlo->LoadExistingSolutions();
-  dlo->SetupProjectionMap(surface);
+  //dlo->SetupProjectionMap(surface);
   double overhead_time = walltime();
 
   if(verbose>1)
@@ -98,7 +98,10 @@ void DynamicLoadDriver::Run()
   double t = 0.0, dt = 0.0, tmax = 0.0;
   int time_step = 0;
   ComputeForces(surface, force, force_over_area, t);
-  ComputeError(force_over_area, t, error);
+
+  if(!concurrent.Coupled())
+    ComputeError(force_over_area, t, error);
+
   lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, true);
 
   if(concurrent.Coupled())
@@ -128,7 +131,9 @@ void DynamicLoadDriver::Run()
           time_step, t, dt, walltime()-start_time);
  
     ComputeForces(surface, force, force_over_area, t); 
-    ComputeError(force_over_area, t, error);
+    
+    if(!concurrent.Coupled())
+      ComputeError(force_over_area, t, error);
 
     if(concurrent.Coupled()) {
 
@@ -156,10 +161,11 @@ void DynamicLoadDriver::Run()
   print("\033[0;32m==========================================\033[0m\n");
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
-  print("Total Mean Squared Error     : %e \n", error/time_step);
-  print("Total File I/O Overhead Time : %f sec.\n", overhead_time - start_time);
-  print("Total Time For Integration   : %f sec.\n", walltime()    - overhead_time);
-  print("Total Computation Time       : %f sec.\n", walltime()    - start_time);
+  if(!concurrent.Coupled())
+    print("Avg. Norm. Root Mean Squared Error : %e \n", error/time_step);
+  print("Total File I/O Overhead Time       : %f sec.\n", overhead_time - start_time);
+  print("Total Time For Integration         : %f sec.\n", walltime()    - overhead_time);
+  print("Total Computation Time             : %f sec.\n", walltime()    - start_time);
   print("\n");
 
 }

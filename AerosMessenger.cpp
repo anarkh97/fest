@@ -472,6 +472,8 @@ AerosMessenger::CommunicateBeforeTimeStepping()
 void
 AerosMessenger::FirstExchange()
 {
+  double refer_time = walltime();
+
   if(algNum == 6) //A6
     FirstExchangeForA6();
   else if(algNum == 22)
@@ -480,6 +482,9 @@ AerosMessenger::FirstExchange()
     print_error("*** Error: Detected unsupported Aero-S algNum: %d.\n", algNum);
     exit_mpi();
   }
+
+  if(verbose>0)
+    print("- Total waiting time: %.4e s.\n", walltime() - refer_time);
 }
 
 //---------------------------------------------------------------
@@ -487,6 +492,8 @@ AerosMessenger::FirstExchange()
 void
 AerosMessenger::Exchange()
 {
+  double refer_time = walltime();
+
   if(algNum == 6) //A6
     ExchangeForA6();
   else if(algNum == 22)
@@ -495,6 +502,9 @@ AerosMessenger::Exchange()
     print_error("*** Error: Detected unsupported Aero-S algNum: %d.\n", algNum);
     exit_mpi();
   }
+
+  if(verbose>0)
+    print("- Total waiting time: %.4e s.\n", walltime() - refer_time);
 }
 
 //---------------------------------------------------------------
@@ -502,6 +512,8 @@ AerosMessenger::Exchange()
 void
 AerosMessenger::FinalExchange()
 {
+  double refer_time = walltime();
+
   if(algNum == 6) //A6
     FinalExchangeForA6();
   else if(algNum == 22)
@@ -510,6 +522,9 @@ AerosMessenger::FinalExchange()
     print_error("*** Error: Detected unsupported Aero-S algNum: %d.\n", algNum);
     exit_mpi();
   }
+
+  if(verbose>0)
+    print("- Total waiting time: %.4e s.\n", walltime() - refer_time);
 }
 
 //---------------------------------------------------------------

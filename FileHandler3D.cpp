@@ -326,6 +326,7 @@ FileHandler3D::ReadMetaFile()
       const auto &current = points[NEIGHBOR][i].GetPointParameters();
       for(int j=0; j<dim; ++j)
         print("  %e", current[j]);
+      print("\n");
     }
     print("\n");
   }
