@@ -144,7 +144,6 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
   }
 
   double nrmse = std::sqrt(numerator / denominator);
-
   return nrmse;
 
 }

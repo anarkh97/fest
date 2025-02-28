@@ -39,6 +39,7 @@ public:
   bool Empty() const { return data_ptr->empty(); }
   int GetSize() const { return (3*num_data_rows + 1)*num_stamps; }
   int GetRows() const { return num_data_rows; }
+  int GetNumStamps() const { return num_stamps; }
 
   std::array<double,2> GetTimeBounds();
   std::array<double,2> GetTimeBracket(double t);
