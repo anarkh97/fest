@@ -128,22 +128,50 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
     print("%e  %e  %e\n", S[i][0], S[i][1], S[i][2]);
 */
 
+  int mpi_rank, mpi_size;
+  MPI_Comm_rank(comm, &mpi_rank);
+  MPI_Comm_size(comm, &mpi_size);
+  int nodes_per_rank = active_nodes / mpi_size;
+  int remainder      = active_nodes - nodes_per_rank*mpi_size;
+
+  assert(remainder >=0 and remainder < mpi_size);
+
+  vector<int> counts(mpi_size, -1);
+  vector<int> start_index(mpi_size, -1);
+
+  for(int i=0; i<mpi_size; ++i) {
+    counts[i]      = (i < remainder) ? nodes_per_rank + 1 : nodes_per_rank;
+    start_index[i] = (i < remainder) ? (nodes_per_rank + 1)*i : nodes_per_rank*i + remainder;
+  }
+
+  assert(start_index.back() + counts.back() == active_nodes);
+
+  int my_block_size  = counts[mpi_rank];
+  int my_start_index = start_index[mpi_rank];
+
   //! Calculate Normalized root mean squared error.
   double numerator   = 0.0;
   double denominator = 0.0; 
-  for(int index=0; index<active_nodes; ++index) {
-
+  int index = my_start_index;
+  for(int iter=0; iter<my_block_size; ++iter) {
     // add small value to avoid division by zero
-    double computed_value = force_over_area[index].norm();
+    double computed_value   = force_over_area[index].norm();
     double reference_value  = S[index].norm(); 
 
-    double relerr = (reference_value - computed_value);
-    numerator   += (relerr*relerr);
-    denominator += (reference_value*reference_value);
+    double relative_value = (reference_value-computed_value);
+    numerator   += std::pow( relative_value, 2);
+    denominator += std::pow(reference_value, 2);
 
+    index++;
   }
 
-  double nrmse = std::sqrt(numerator / denominator);
+  double global_numerator = 0;
+  double global_denominator = 0;
+
+  MPI_Allreduce(  &numerator,   &global_numerator, 1, MPI_DOUBLE, MPI_SUM, comm);
+  MPI_Allreduce(&denominator, &global_denominator, 1, MPI_DOUBLE, MPI_SUM, comm);
+
+  double nrmse = std::sqrt(global_numerator/global_denominator);
   return nrmse;
 
 }

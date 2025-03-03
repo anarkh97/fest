@@ -136,6 +136,7 @@ void DynamicLoadDriver::Run()
       double error_step;
       ComputeError(force_over_area, t, error_step);
       error += error_step;
+      if(verbose>1) print("  - Error: %e\n", error_step);
       //if(error <= error_step) error = error_step;
     }
 
