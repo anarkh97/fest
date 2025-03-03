@@ -134,8 +134,8 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
   for(int index=0; index<active_nodes; ++index) {
 
     // add small value to avoid division by zero
-    double reference_value = force_over_area[index].norm() + 1e-6;
-    double computed_value  = S[index].norm() + 1e-6; 
+    double computed_value = force_over_area[index].norm();
+    double reference_value  = S[index].norm(); 
 
     double relerr = (reference_value - computed_value);
     numerator   += (relerr*relerr);

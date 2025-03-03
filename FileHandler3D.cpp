@@ -299,13 +299,13 @@ FileHandler3D::ReadMetaFile()
   for(int i=0; i<(int)points[NEIGHBOR].size(); ++i) {
  
     const auto &current = points[NEIGHBOR][i].GetPointParameters();
-    const auto &target  = points[TARGET][0].GetPointParameters();
+    const auto &target  = points[  TARGET][0].GetPointParameters();
 
     double dist = 0;
     for(int d=0; d<dim; ++d) 
       dist += (current[d] - target[d])*(current[d] - target[d]);
     
-    dist2target.push_back(std::make_pair(dist, i));
+    dist2target.push_back(std::make_pair(std::sqrt(dist), i));
 
   }
 
@@ -326,7 +326,7 @@ FileHandler3D::ReadMetaFile()
       const auto &current = points[NEIGHBOR][i].GetPointParameters();
       for(int j=0; j<dim; ++j)
         print("  %e", current[j]);
-      print("\n");
+      print("  (r = %e)\n", dist2target[i].first);
     }
     print("\n");
   }

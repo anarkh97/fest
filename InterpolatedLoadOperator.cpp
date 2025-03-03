@@ -170,11 +170,13 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
   vector<double> targ                  = file_handler.GetParametersForTarget();
   std::vector<vector<double>> neighbor = file_handler.GetParametersForAllNeighbors();
 
+  vector<double> &N0 = neighbor.front();
+  vector<double> &N1 = neighbor.back();
   int var_dim = targ.size();
   double rmin = 0, rmax = 0;
   for(int i=0; i<var_dim; ++i) {
-    rmin += (neighbor[           0][i] - targ[i])*(neighbor[           0][i] - targ[i]);
-    rmax += (neighbor[num_points-1][i] - targ[i])*(neighbor[num_points-1][i] - targ[i]);
+    rmin += (N0[i] - targ[i])*(N0[i] - targ[i]);
+    rmax += (N1[i] - targ[i])*(N1[i] - targ[i]);
   }
 
   rmin = std::sqrt(rmin);
@@ -251,12 +253,20 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(TriangulatedSurface &surface, v
       fd[i] = solutions[i][index].norm();
 
     vector<double> weight(num_points, -1.0);
-    vector<double> interp(num_points, -1.0);
+    vector<double> interp(1, -1.0);
 
     MathTools::rbf_weight(var_dim, num_points, xd, r0, phi, fd, weight.data());
     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
                           targ.data(), interp.data());
 
+/*
+    if(index == 10) {
+      for(int i=0; i<num_points; ++i) print("  %e", weight[i]);
+      print("\n");
+      for(int i=0; i<num_points; ++i) print("  %e", fd[i]);
+      print("  -> %e\n", interp[0]);
+    }
+*/
     force[index]           = interp[0]*area*normal;   
     force_over_area[index] = interp[0]*normal;
 

@@ -135,8 +135,8 @@ void DynamicLoadDriver::Run()
     if(!concurrent.Coupled()) {
       double error_step;
       ComputeError(force_over_area, t, error_step);
-      //error += error_step;
-      if(error <= error_step) error = error_step;
+      error += error_step;
+      //if(error <= error_step) error = error_step;
     }
 
     if(concurrent.Coupled()) {
@@ -166,7 +166,7 @@ void DynamicLoadDriver::Run()
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
   if(!concurrent.Coupled())
-    print("Max. Norm. Root Mean Squared Error : %e \n", error);
+    print("Avg. Norm. Root Mean Squared Error : %e.\n", error/time_step);
   print("Total File I/O Overhead Time       : %f sec.\n", overhead_time - start_time);
   print("Total Time For Integration         : %f sec.\n", walltime()    - overhead_time);
   print("Total Computation Time             : %f sec.\n", walltime()    - start_time);
