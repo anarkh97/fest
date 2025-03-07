@@ -35,11 +35,29 @@ public:
   const std::string& GetPointDirectory() const { return directory; };
   const std::string& GetPointSurfaceFile() const { return surface_file; };
   const std::string& GetPointSolutionFile() const { return solution_file; };
-  const std::vector<double>& GetPointParameters() { return x; };
+  const std::vector<double>& GetPointParameters() const { return x; };
 
-  int GetDim() { return x.size(); };
+  int GetDim() const { return x.size(); };
 
-};	
+  // operators
+  double GetDistance(const MetaPoint& other);
+
+};
+
+inline double MetaPoint::GetDistance(const MetaPoint &other)
+{
+
+  assert((int)x.size() == other.GetDim());
+
+  const std::vector<double> &other_x = other.GetPointParameters();
+  
+  double dist = 0;
+  for(int i=0; i<(int)x.size(); ++i) 
+    dist += std::pow(x[i] - other_x[i], 2);
+
+  return std::sqrt(dist);
+
+}
 
 class FileHandler3D {
 
