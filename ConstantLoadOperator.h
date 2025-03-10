@@ -22,8 +22,14 @@ public:
   void LoadExistingSurfaces() override;
   void LoadExistingSolutions() override;
 
-  void ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D>& force,
-                     std::vector<Vec3D>& force_over_area, double t) override;
+  void ComputeForces(TriangulatedSurface& surface, 
+                     std::vector<Vec3D>& force,
+                     std::vector<Vec3D>& force_over_area, 
+                     double t) override;
+
+  void ComputePressures(TriangulatedSurface& surface,
+                        std::vector<double>& pressure,
+                        double t) override;
 
   void SetupProjectionMap(TriangulatedSurface &surface) override;
 };

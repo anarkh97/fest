@@ -1,14 +1,7 @@
 #ifndef _DYNAMIC_LOAD_DRIVER_H_
 #define _DYNAMIC_LOAD_DRIVER_H_
   
-#include<IoData.h>
-#include<ConcurrentProgramsHandler.h>
-#include<TriangulatedSurface.h>
-#include<DynamicLoadOperator.h>
-#include<LagrangianOutput.h>
-#include<Vector3D.h>
-#include<vector>
-#include<memory>
+#include<DynamicDriver.h>
 
 /**********************************************
  * The DynamicLoadDriver class computes forces 
@@ -21,31 +14,23 @@
  *********************************************/
 
 //! Dynamic load driver
-class DynamicLoadDriver {
+class DynamicLoadDriver : public DynamicDriver {
 
-  MPI_Comm& comm;
-  IoData& iod;
   ConcurrentProgramsHandler& concurrent;
-  LagrangianOutput lagout;
-
-  DynamicLoadOperator *dlo;
 
 public:
 
-  DynamicLoadDriver(IoData &iod_, MPI_Comm &comm_, 
-                    ConcurrentProgramsHandler &concurrent_);
+  DynamicLoadDriver(IoData& iod_, MPI_Comm& comm_, 
+                    ConcurrentProgramsHandler& concurrent_);
 
   ~DynamicLoadDriver() { }
 
-  void Run();
-  void Destroy();
+  void Run() override;
 
 private:
 
-  void ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force, 
-                     std::vector<Vec3D> &force_over_area, double t);
-
-  void ComputeError(std::vector<Vec3D> &force_over_area, double t, double &error);
+  void ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D>& force, 
+                     std::vector<Vec3D>& force_over_area, double t);
 
 };
 

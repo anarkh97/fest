@@ -266,6 +266,9 @@ void rbf_weight ( int m, int nd, double xd[], double r0,
   delete [] r;
   delete [] v;
 
+  // temporary regularization
+  //A = A + 0.05*Eigen::MatrixXd::Identity(nd, nd);
+
   Eigen::VectorXd x(nd, 1);
   x = A.colPivHouseholderQr().solve(b);
 

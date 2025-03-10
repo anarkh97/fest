@@ -31,16 +31,28 @@ public:
   void LoadExistingSurfaces() override;
   void LoadExistingSolutions() override;
 
-  void ComputeForces(TriangulatedSurface& surface, std::vector<Vec3D>& force,
-                     std::vector<Vec3D>& force_over_area, double t) override;
+  void ComputeForces(TriangulatedSurface& surface, 
+                     std::vector<Vec3D>& force,
+                     std::vector<Vec3D>& force_over_area, 
+                     double t) override;
+
+  void ComputePressures(TriangulatedSurface& surface,
+                        std::vector<double>& pressure,
+                        double t) override;
 
   void SetupProjectionMap(TriangulatedSurface &surface) override;
 
 protected:
 
   // Interpolation methods
-  void InterpolateInMetaSpace(TriangulatedSurface &surface, std::vector<std::vector<Vec3D>> &solutions, 
-                              std::vector<Vec3D> &force, std::vector<Vec3D> &force_over_area); 
+  void InterpolateInMetaSpace(TriangulatedSurface& surface, 
+                              std::vector<std::vector<Vec3D>>& solutions, 
+                              std::vector<double>& pressure);
+
+  void InterpolateInMetaSpace(TriangulatedSurface& surface, 
+                              std::vector<std::vector<Vec3D>>& solutions, 
+                              std::vector<Vec3D>& force, 
+                              std::vector<Vec3D>& force_over_area); 
 
 };
 

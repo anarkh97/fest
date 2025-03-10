@@ -44,18 +44,25 @@ public:
 
   //! target point's surface. Only used when FEST is
   //! called in stand-alone mode.
-  void InitializeSurface(TriangulatedSurface *surface);
+  void InitializeSurface(TriangulatedSurface* surface);
 
   virtual void LoadExistingSurfaces() = 0;
   virtual void LoadExistingSolutions() = 0;
 
   virtual void Destroy();
-  virtual void ComputeForces(TriangulatedSurface &surface, std::vector<Vec3D> &force,
-                             std::vector<Vec3D> &force_over_area, double t) = 0;
 
-  virtual void SetupProjectionMap(TriangulatedSurface &surface) = 0;
+  virtual void ComputeForces(TriangulatedSurface& surface, 
+                             std::vector<Vec3D>& force,
+                             std::vector<Vec3D>& force_over_area, 
+                             double t) = 0;
 
-  double ComputeError(std::vector<Vec3D> &force_over_area, double t);
+  virtual void ComputePressures(TriangulatedSurface& surface, 
+                                std::vector<double>& pressure,
+                                double t) = 0;
+
+  virtual void SetupProjectionMap(TriangulatedSurface& surface) = 0;
+
+  double ComputeError(std::vector<double>& pressure, double t);
 
 protected:
 

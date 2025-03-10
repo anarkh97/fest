@@ -88,13 +88,14 @@ DynamicLoadOperator::InitializeSurface(TriangulatedSurface *surf)
 //------------------------------------------------------------
 
 double
-DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
+DynamicLoadOperator::ComputeError(std::vector<double> &pressure, 
+                                  double t)
 {
 
   if(!true_solution)
     return 0.0;
 
-  int active_nodes = (int)force_over_area.size();
+  int active_nodes = (int)pressure.size();
 
   // find the time interval
   double tk, tkp;
@@ -118,7 +119,7 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
 
   vector<Vec3D> &Sk  = true_solution->GetSolutionAtTime(tk);
   vector<Vec3D> &Skp = true_solution->GetSolutionAtTime(tkp);
-  vector<Vec3D> S(force_over_area.size(), 0.0);
+  vector<Vec3D> S(pressure.size(), 0.0);
 
   InterpolateInTime(tk, (double*)Sk.data(), tkp, (double*)Skp.data(), t,
                     (double*)S.data(), 3*active_nodes);
@@ -155,7 +156,7 @@ DynamicLoadOperator::ComputeError(std::vector<Vec3D> &force_over_area, double t)
   int index = my_start_index;
   for(int iter=0; iter<my_block_size; ++iter) {
     // add small value to avoid division by zero
-    double computed_value   = force_over_area[index].norm();
+    double computed_value   = pressure[index];
     double reference_value  = S[index].norm(); 
 
     double relative_value = (reference_value-computed_value);

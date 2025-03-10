@@ -1,41 +1,33 @@
-#include<DynamicLoadDriver.h>
+#include<DynamicErrorDriver.h>
 #include<cstring>
 
 using std::vector;
-using std::shared_ptr;
-using std::make_shared;
 
 extern double start_time;
 extern int verbose;
 
 //------------------------------------------------------------
 
-DynamicLoadDriver::DynamicLoadDriver(IoData &iod_, 
-                                     MPI_Comm &comm_, 
-                                     ConcurrentProgramsHandler &concurrent_)
-                 : DynamicDriver(iod_, comm_), concurrent(concurrent_)
+DynamicErrorDriver::DynamicErrorDriver(IoData &iod_, MPI_Comm &comm_)
+                  : DynamicDriver(iod_, comm_)
 {
-  assert(!concurrent.Coupled());
+
 }
 
 //------------------------------------------------------------
 
 //! Code reused from M2C's DynamicLoadCalculator::RunForAeroS
-void DynamicLoadDriver::Run()
+void DynamicErrorDriver::Run()
 {
   
   // objects for the embedded surface and boundary force.
   // Aero-S will update the surface with computed displacementes.
   // We will populate force and send it to Aero-S.
-  TriangulatedSurface       surface;
-  vector<Vec3D>             force; 
-  vector<Vec3D>             force_over_area;
+  TriangulatedSurface surface;
+  vector<double>      pressure;
 
-  // This will populate the surface object from Aero-S.
-  concurrent.InitializeMessengers(&surface, &force);
-
-  // Resize force over area
-  force_over_area.assign(surface.active_nodes, Vec3D(0.0));
+  dlo->InitializeSurface(&surface);
+  pressure.assign(surface.active_nodes, 0.0);
 
   // All meta-level setup, such as nearest neighbor weights and surface maps,
   // will be computed here, before time stepping.
@@ -45,7 +37,7 @@ void DynamicLoadDriver::Run()
   double overhead_time = walltime();
 
   if(verbose>1)
-    print("- Time taken for file I/O: %f sec.\n", overhead_time - start_time);
+    print("- Time taken for file I/O: %f sec.\n", overhead_time-start_time);
 
   // Output recieved surface
   lagout.OutputTriangulatedMesh(surface.X0, surface.elems);
@@ -53,16 +45,16 @@ void DynamicLoadDriver::Run()
   // ---------------------------------------------------
   // Main time loop (mimics the time loop in Main.cpp
   // ---------------------------------------------------
+  double error = 0.0;
   double t = 0.0, dt = 0.0, tmax = 0.0;
   int time_step = 0;
-  ComputeForces(surface, force, force_over_area, t);
+  ComputePressures(surface, pressure, t);
+  ComputeError(pressure, t, error);
 
-  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, true);
+  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, pressure, true);
 
-  concurrent.CommunicateBeforeTimeStepping();
-
-  dt   = concurrent.GetTimeStepSize();
-  tmax = concurrent.GetMaxTime();
+  dt   = iod.ts.timestep;
+  tmax = iod.ts.maxTime;
   
   while(t<tmax) {
 
@@ -78,29 +70,24 @@ void DynamicLoadDriver::Run()
     print("Step %d: t = %e, dt = %e. Computation time: %.4e s.\n", 
           time_step, t, dt, walltime()-start_time);
  
-    ComputeForces(surface, force, force_over_area, t); 
-    
-    if(t<tmax) {
-      if(time_step==1)
-        concurrent.FirstExchange();
-      else
-        concurrent.Exchange();
-    } 
+    ComputePressures(surface, pressure, t);
 
-    dt   = concurrent.GetTimeStepSize();
-    tmax = concurrent.GetMaxTime(); //set to a small number at final time-step
+    double error_step;
+    ComputeError(pressure, t, error_step);
+    error += error_step;
+    if(verbose>1) print("  - Error: %e\n", error_step);
+    //if(error <= error_step) error = error_step;
 
-    lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, false);
+    lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, pressure, false);
   }
 
-  concurrent.FinalExchange();
-
-  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, force, force_over_area, true);
+  lagout.OutputResults(t, dt, time_step, surface.X0, surface.X, pressure, true);
 
   print("\n");
   print("\033[0;32m==========================================\033[0m\n");
   print("\033[0;32m            NORMAL TERMINATION            \033[0m\n");
   print("\033[0;32m==========================================\033[0m\n");
+  print("Avg. Norm. Root Mean Squared Error : %e.\n", error/time_step);
   print("Total File I/O Overhead Time       : %f sec.\n", overhead_time - start_time);
   print("Total Time For Integration         : %f sec.\n", walltime()    - overhead_time);
   print("Total Computation Time             : %f sec.\n", walltime()    - start_time);
@@ -111,13 +98,26 @@ void DynamicLoadDriver::Run()
 //------------------------------------------------------------
 
 void
-DynamicLoadDriver::ComputeForces(TriangulatedSurface &surface, vector<Vec3D> &force, 
-                                 vector<Vec3D> &force_over_area, double t)
+DynamicErrorDriver::ComputePressures(TriangulatedSurface &surface,
+                                     vector<double> &pressure, 
+                                     double t)
 {
 
   assert(dlo); // cannot be null
-  dlo->ComputeForces(surface, force, force_over_area, t);
+  dlo->ComputePressures(surface, pressure, t);
 
 }
 
 //------------------------------------------------------------
+
+void
+DynamicErrorDriver::ComputeError(vector<double> &pressure, double t, double &error)
+{
+  
+  assert(dlo); // cannot be null
+  error = dlo->ComputeError(pressure, t);
+
+}
+
+//------------------------------------------------------------
+

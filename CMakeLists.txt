@@ -80,6 +80,8 @@ NodalProjectionOperator.cpp
 ExactNodesOperator.cpp
 InitialNodesOperator.cpp
 UpdatedNodesOperator.cpp
+DynamicDriver.cpp
+DynamicErrorDriver.cpp
 DynamicLoadOperator.cpp
 ConstantLoadOperator.cpp
 ClosestLoadOperator.cpp
