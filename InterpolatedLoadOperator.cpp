@@ -1,5 +1,6 @@
 #include<InterpolatedLoadOperator.h>
 #include<MathTools/rbf_interp.hpp>
+#include<MathTools/weighted_interp.hpp>
 
 using std::vector;
 
@@ -326,33 +327,15 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(
 
     vector<double> weight(num_points, -1.0);
     vector<double> interp(1, -1.0);
+/*
     MathTools::rbf_weight(var_dim, num_points, xd, r0, phi, fd, weight.data());
     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
                           target.data(), interp.data());
-
-/*  
-    // weighted interpolation
-    double denom = 0.0;
-    for(int i=0; i<num_points; ++i) {
-
-      double dist = 
-        ComputeDistance(neighbor[i].data(), target.data(), var_dim);
-
-      weight[i] = 1/std::pow(dist, 2); // for debugging
-      denom += weight[i];
-      interp[0] += weight[i]*fd[i];
-
-    }
-
-    interp[0] = interp[0]/denom;
-
-    if(index == 2) {
-      for(int i=0; i<num_points; ++i) fprintf(stdout, "  %e", weight[i]);
-      fprintf(stdout, "\n");
-      for(int i=0; i<num_points; ++i) fprintf(stdout, "  %e", fd[i]);
-      fprintf(stdout, "  -> %e\n", interp[0]);
-    }
 */
+
+    MathTools::weighted_interp(var_dim, num_points, xd, fd, 1, target.data(), 
+                               interp.data());
+
 
     pressure[index] = interp[0];
 
@@ -464,32 +447,14 @@ InterpolatedLoadOperator::InterpolateInMetaSpace(
 
     vector<double> weight(num_points, -1.0);
     vector<double> interp(1, -1.0);
+/*
     MathTools::rbf_weight(var_dim, num_points, xd, r0, phi, fd, weight.data());
     MathTools::rbf_interp(var_dim, num_points, xd, r0, phi, weight.data(), 1,
                           target.data(), interp.data());
-/* 
-    // weighted interpolation
-    double denom = 0.0;
-    for(int i=0; i<num_points; ++i) {
-
-      double dist = 
-        ComputeDistance(neighbor[i].data(), target.data(), var_dim);
-
-      weight[i] = 1/std::pow(dist, 2); // for debugging
-      denom += weight[i];
-      interp[0] += weight[i]*fd[i];
-
-    }
-
-    interp[0] = interp[0]/denom;
-
-    if(index == 2) {
-      for(int i=0; i<num_points; ++i) fprintf(stdout, "  %e", weight[i]);
-      fprintf(stdout, "\n");
-      for(int i=0; i<num_points; ++i) fprintf(stdout, "  %e", fd[i]);
-      fprintf(stdout, "  -> %e\n", interp[0]);
-    }
 */
+
+    MathTools::weighted_interp(var_dim, num_points, xd, fd, 1, target.data(), 
+                               interp.data());
 
     force[index]           = interp[0]*area*normal;   
     force_over_area[index] = interp[0]*normal;

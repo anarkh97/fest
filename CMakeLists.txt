@@ -90,6 +90,7 @@ DynamicLoadDriver.cpp
 LagrangianOutput.cpp
 Utils.cpp
 MathTools/rbf_interp.cpp
+MathTools/weighted_interp.cpp
 )
 
 # link to libraries
